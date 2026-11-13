@@ -1,3 +1,0 @@
-# cp backend.hcl.example backend.hcl  →  terraform init -backend-config=backend.hcl
-# 버킷은 bootstrap/aws 가 생성 (이름에 계정 ID 포함 → 저장소에 커밋하지 않음)
-bucket = "point-platform-tfstate-CHANGE_ME"

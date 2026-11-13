@@ -23,8 +23,3 @@ build/
 *-key.json
 CLAUDE.local.md
 .claude/settings.local.json
-
-# Terraform backend (계정 ID 포함)
-backend.hcl
-*.tfplan
-plan.log

@@ -1,0 +1,35 @@
+# EKS 용 App of Apps 하위 애플리케이션
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps-aws
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/CHANGE_ME_ORG/point-infra.git
+    targetRevision: main
+    path: k8s/overlays/aws
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: point
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: karpenter-nodepools
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/CHANGE_ME_ORG/point-infra.git
+    targetRevision: main
+    path: k8s/platform/karpenter
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+# TODO: keda, external-secrets, kube-prometheus-stack, aws-load-balancer-controller

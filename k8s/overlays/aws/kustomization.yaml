@@ -3,14 +3,16 @@ kind: Kustomization
 resources:
   - ../../base/monolith
   - ../../base/event-service
-  - ../../base/web
-  - external-secrets.yaml
-  - db-init.yaml
-  - gateway.yaml
+  - ingress.yaml
 configMapGenerator:
   - name: monolith-config
     literals: [SPRING_PROFILES_ACTIVE=aws, KAFKA_ENABLED=true, DR_MODE=false]
   - name: event-config
     literals: [SPRING_PROFILES_ACTIVE=aws]
-# 이미지(ECR 주소·태그)는 저장소에 계정 ID 를 남기지 않도록 ArgoCD Application(spec.source.kustomize.images)이
-# 주입한다 → infra/terraform/modules/aws/argocd-bootstrap
+images:   # CI 가 태그를 자동 커밋
+  - name: monolith
+    newName: ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/monolith
+    newTag: "0.1.0"
+  - name: event-service
+    newName: ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/event-service
+    newTag: "0.1.0"

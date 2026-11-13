@@ -5,10 +5,7 @@ terraform {
 }
 provider "aws" { region = "ap-northeast-2" }
 
-variable "bucket_name" {
-  description = "State 버킷 이름 (예: point-platform-tfstate-<account_id>)"
-  type        = string
-}
+variable "bucket_name" { type = string } # 예: point-platform-tfstate-<account_id>
 
 resource "aws_s3_bucket" "state" {
   bucket = var.bucket_name
@@ -20,9 +17,7 @@ resource "aws_s3_bucket_versioning" "state" {
 }
 resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
   bucket = aws_s3_bucket.state.id
-  rule {
-    apply_server_side_encryption_by_default { sse_algorithm = "aws:kms" }
-  }
+  rule { apply_server_side_encryption_by_default { sse_algorithm = "aws:kms" } }
 }
 resource "aws_s3_bucket_public_access_block" "state" {
   bucket                  = aws_s3_bucket.state.id

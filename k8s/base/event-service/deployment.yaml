@@ -25,7 +25,6 @@ spec:
           ports: [{ containerPort: 8081 }]
           envFrom:
             - configMapRef: { name: event-config }
-            - secretRef: { name: event-service-env }  # Redis·Kafka 엔드포인트 (External Secrets 가 생성)
           resources:
             requests: { cpu: "1", memory: 1Gi }
             limits: { memory: 1Gi }
