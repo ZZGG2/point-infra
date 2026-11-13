@@ -26,3 +26,5 @@ CLAUDE.local.md
 
 # Terraform backend (계정 ID 포함)
 backend.hcl
+*.tfplan
+plan.log

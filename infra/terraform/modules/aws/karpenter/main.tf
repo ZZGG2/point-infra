@@ -39,6 +39,7 @@ resource "helm_release" "karpenter" {
     }
     # 컨트롤러는 core(Managed NodeGroup) 에서만 실행 — 자기가 띄운 노드에 올라가지 않게
     nodeSelector = { workload = "core" }
+    replicas     = var.replicas
     controller = {
       resources = {
         requests = { cpu = "250m", memory = "512Mi" }

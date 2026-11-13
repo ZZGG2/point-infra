@@ -24,9 +24,19 @@ variable "engine_version" {
   default     = "16.15"
 }
 variable "instance_class" {
-  description = "인스턴스 클래스"
+  description = "인스턴스 클래스 (Data API 사용 → db.serverless 또는 r/x 계열. t 계열 불가)"
   type        = string
-  default     = "db.t4g.medium"
+  default     = "db.serverless"
+}
+variable "serverless_min_acu" {
+  description = "Serverless v2 최소 ACU"
+  type        = number
+  default     = 0.5
+}
+variable "serverless_max_acu" {
+  description = "Serverless v2 최대 ACU"
+  type        = number
+  default     = 4
 }
 variable "instance_count" {
   description = "인스턴스 수 (writer 1 + reader N)"

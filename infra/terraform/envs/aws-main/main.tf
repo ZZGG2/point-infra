@@ -1,7 +1,7 @@
 locals {
   name         = "point-main"
   cluster_name = "point-main-eks"
-  alb_name     = "point-main-alb" # k8s/overlays/aws/ingress.yaml 의 load-balancer-name 과 일치
+  alb_name     = "point-main-alb" # k8s/overlays/aws/gateway.yaml 의 LoadBalancerConfiguration.loadBalancerName 과 일치
   tags = {
     project     = "point-platform"
     env         = "main"
@@ -10,6 +10,8 @@ locals {
     cost-center = "portfolio"
   }
   admin_cidrs = length(var.admin_cidrs) > 0 ? var.admin_cidrs : ["${chomp(data.http.my_ip.response_body)}/32"]
+  # 도메인·ACM(HTTPS 443) 전까지 ALB 는 관리자 IP 만 허용 (security.md: 0.0.0.0/0 은 ALB 443 만)
+  alb_ingress_cidrs = length(var.alb_ingress_cidrs) > 0 ? var.alb_ingress_cidrs : local.admin_cidrs
 }
 
 data "http" "my_ip" {
@@ -40,6 +42,7 @@ module "eks" {
   vpc_id              = module.vpc.vpc_id
   subnet_ids          = module.vpc.app_subnet_ids
   public_access_cidrs = local.admin_cidrs
+  core_min_size       = var.core_node_count
   tags                = local.tags
 }
 
@@ -52,19 +55,20 @@ module "karpenter" {
 }
 
 module "ecr" {
-  source = "../../modules/aws/ecr"
-  tags   = local.tags
+  source       = "../../modules/aws/ecr"
+  repositories = ["monolith", "event-service", "web"]
+  tags         = local.tags
 }
 
 # ---------------------------------------------------------------- 데이터
-module "aurora" {
-  source                     = "../../modules/aws/aurora"
+module "rds" {
+  source                     = "../../modules/aws/rds"
   name                       = local.name
-  region                     = var.region
   vpc_id                     = module.vpc.vpc_id
   db_subnet_group            = module.vpc.database_subnet_group
   allowed_security_group_ids = [module.eks.node_security_group_id] # TODO: + MSK Connect SG
-  instance_count             = var.aurora_instance_count
+  instance_class             = var.rds_instance_class
+  multi_az                   = var.rds_multi_az
   tags                       = local.tags
 }
 
@@ -74,6 +78,8 @@ module "elasticache" {
   vpc_id                     = module.vpc.vpc_id
   subnet_ids                 = module.vpc.data_subnet_ids
   allowed_security_group_ids = [module.eks.node_security_group_id]
+  node_type                  = var.redis_node_type
+  replicas                   = var.redis_replicas
   tags                       = local.tags
 }
 
@@ -90,7 +96,7 @@ module "msk" {
 # ---------------------------------------------------------------- 앱 연결 정보 (Secrets Manager → External Secrets)
 # 엔드포인트·자격 증명은 Git 에 두지 않는다. ExternalSecret(k8s/overlays/aws)이 이 시크릿을 그대로 env 로 만든다.
 resource "aws_secretsmanager_secret" "app" {
-  for_each                = toset(["monolith", "event-service"])
+  for_each                = toset(["monolith", "event-service", "db-bootstrap"])
   name                    = "${local.name}/${each.key}"
   description             = "${each.key} runtime config (External Secrets)"
   recovery_window_in_days = 0 # 학습 환경: destroy 후 같은 이름으로 즉시 재생성
@@ -99,9 +105,9 @@ resource "aws_secretsmanager_secret" "app" {
 resource "aws_secretsmanager_secret_version" "monolith" {
   secret_id = aws_secretsmanager_secret.app["monolith"].id
   secret_string = jsonencode({
-    DB_URL                         = "jdbc:postgresql://${module.aurora.endpoint}:5432/point?sslmode=require"
-    DB_USERNAME                    = module.aurora.app_username
-    DB_PASSWORD                    = module.aurora.app_password
+    DB_URL                         = "jdbc:postgresql://${module.rds.address}:${module.rds.port}/point?sslmode=require"
+    DB_USERNAME                    = module.rds.app_username
+    DB_PASSWORD                    = module.rds.app_password
     KAFKA_BOOTSTRAP                = module.msk.bootstrap_brokers_tls
     SPRING_KAFKA_SECURITY_PROTOCOL = "SSL"
   })
@@ -115,6 +121,19 @@ resource "aws_secretsmanager_secret_version" "event_service" {
     SPRING_DATA_REDIS_SSL_ENABLED  = "true"
     KAFKA_BOOTSTRAP                = module.msk.bootstrap_brokers_tls
     SPRING_KAFKA_SECURITY_PROTOCOL = "SSL"
+  })
+}
+
+# db-init Job(k8s/overlays/aws/db-init.yaml) 전용: 마스터 계정으로 app_rw 생성
+resource "aws_secretsmanager_secret_version" "db_bootstrap" {
+  secret_id = aws_secretsmanager_secret.app["db-bootstrap"].id
+  secret_string = jsonencode({
+    PGHOST       = module.rds.address
+    PGPORT       = tostring(module.rds.port)
+    PGDATABASE   = "point"
+    PGUSER       = module.rds.master_username
+    PGPASSWORD   = module.rds.master_password
+    APP_PASSWORD = module.rds.app_password
   })
 }
 
@@ -145,31 +164,18 @@ module "eso_pod_identity" {
   tags = local.tags
 }
 
-# ALB 보안 그룹: CloudFront 오리진 대역 + 관리자 IP 에서 80 만 허용 (security.md: 0.0.0.0/0 금지)
-data "aws_ec2_managed_prefix_list" "cloudfront" {
-  name = "com.amazonaws.global.cloudfront.origin-facing"
-}
-
+# ALB 보안 그룹 — Gateway 의 LoadBalancerConfiguration.securityGroups 가 이름으로 참조
 resource "aws_security_group" "alb" {
-  name        = local.alb_name # Ingress 의 security-groups 어노테이션이 이름으로 참조
-  description = "API ALB (CloudFront origin-facing + admin)"
+  name        = local.alb_name
+  description = "Gateway ALB"
   vpc_id      = module.vpc.vpc_id
   tags        = { Name = local.alb_name }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "alb_cloudfront" {
+resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  for_each          = toset(local.alb_ingress_cidrs)
   security_group_id = aws_security_group.alb.id
-  description       = "HTTP from CloudFront"
-  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
-  ip_protocol       = "tcp"
-  from_port         = 80
-  to_port           = 80
-}
-
-resource "aws_vpc_security_group_ingress_rule" "alb_admin" {
-  for_each          = toset(local.admin_cidrs)
-  security_group_id = aws_security_group.alb.id
-  description       = "HTTP from admin (direct test)"
+  description       = "HTTP (TODO: 도메인·ACM 후 443 공개, 80 은 리다이렉트)"
   cidr_ipv4         = each.value
   ip_protocol       = "tcp"
   from_port         = 80
@@ -189,7 +195,7 @@ module "argocd" {
   depends_on = [
     module.karpenter, module.lbc_pod_identity, module.eso_pod_identity,
     aws_secretsmanager_secret_version.monolith, aws_secretsmanager_secret_version.event_service,
-    aws_security_group.alb,
+    aws_secretsmanager_secret_version.db_bootstrap, aws_security_group.alb,
   ]
 
   cluster_name = module.eks.cluster_name
@@ -201,13 +207,14 @@ module "argocd" {
   images = {
     monolith        = "${module.ecr.repository_urls["monolith"]}:${var.image_tag}"
     "event-service" = "${module.ecr.repository_urls["event-service"]}:${var.image_tag}"
+    web             = "${module.ecr.repository_urls["web"]}:${var.web_image_tag}"
   }
 }
 
-# ---------------------------------------------------------------- 엣지 (ALB 는 Ingress 로 생성되므로 생길 때까지 대기)
+# ---------------------------------------------------------------- ALB(Gateway 가 생성) 대기 → WAF 연결
 resource "terraform_data" "wait_alb" {
-  depends_on = [module.argocd]
-  input      = local.alb_name
+  depends_on       = [module.argocd]
+  triggers_replace = ["gateway-api"] # Ingress → Gateway 전환으로 ALB 가 재생성됨
 
   provisioner "local-exec" {
     interpreter = ["pwsh", "-NoProfile", "-NonInteractive", "-Command"]
@@ -218,23 +225,23 @@ resource "terraform_data" "wait_alb" {
         if ($LASTEXITCODE -eq 0 -and $state -eq 'active') { Write-Output "ALB ${local.alb_name} active"; exit 0 }
         Start-Sleep -Seconds 20
       }
-      Write-Error "ALB ${local.alb_name} 이 ${var.alb_wait_minutes}분 안에 생성되지 않았습니다. kubectl -n argocd get applications 로 동기화 상태를 확인하세요."
+      Write-Error "ALB ${local.alb_name} 이 ${var.alb_wait_minutes}분 안에 생성되지 않았습니다. kubectl -n argocd get applications / kubectl -n point describe gateway point 로 확인하세요."
       exit 1
     PS
   }
 }
 
-data "aws_lb" "api" {
+data "aws_lb" "gateway" {
   depends_on = [terraform_data.wait_alb]
   name       = local.alb_name
 }
 
-module "edge" {
-  source       = "../../modules/aws/edge"
-  providers    = { aws = aws, aws.us_east_1 = aws.us_east_1 }
-  name         = local.name
-  alb_dns_name = data.aws_lb.api.dns_name
-  tags         = local.tags
+module "waf" {
+  source  = "../../modules/aws/waf"
+  name    = local.name
+  alb_arn = data.aws_lb.gateway.arn
+  tags    = local.tags
 }
 
+# TODO: Route 53 호스팅 영역 + ACM → Gateway HTTPS 리스너 (도메인 확보 시)
 # TODO: module "vpn_aws_side" — GCP HA VPN 인터페이스 IP를 변수로 받아 생성 (GCP DR 구축 시)

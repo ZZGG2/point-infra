@@ -26,23 +26,40 @@ locals {
       syncPolicy  = local.sync
     }
 
+    # Gateway API 표준 CRD + LB Controller(차트에 gateway.k8s.aws CRD 포함).
+    # 같은 Application 에 묶어 CRD 가 컨트롤러보다 먼저 적용되게 한다 (컨트롤러는 기동 시 CRD 를 감지해 Gateway 기능을 켠다)
     aws-load-balancer-controller = {
       namespace = "argocd"
       project   = "default"
-      source = {
-        repoURL        = "https://aws.github.io/eks-charts"
-        chart          = "aws-load-balancer-controller"
-        targetRevision = var.lbc_chart_version
-        helm = {
-          valuesObject = {
-            clusterName    = var.cluster_name
-            region         = var.region
-            vpcId          = var.vpc_id
-            serviceAccount = { name = "aws-load-balancer-controller" } # Pod Identity 연결 대상
-            nodeSelector   = { workload = "core" }
+      sources = [
+        {
+          repoURL        = "https://github.com/kubernetes-sigs/gateway-api.git"
+          targetRevision = var.gateway_api_version
+          path           = "config/crd/standard"
+        },
+        {
+          repoURL        = "https://aws.github.io/eks-charts"
+          chart          = "aws-load-balancer-controller"
+          targetRevision = var.lbc_chart_version
+          helm = {
+            valuesObject = {
+              clusterName    = var.cluster_name
+              region         = var.region
+              vpcId          = var.vpc_id
+              serviceAccount = { name = "aws-load-balancer-controller" } # Pod Identity 연결 대상
+              nodeSelector   = { workload = "core" }
+              replicaCount   = var.addon_replicas
+              # 차트가 렌더링마다 자체 서명 인증서를 새로 만들면 ArgoCD 동기화 시 webhook CA 와 어긋난다
+              # → Terraform 이 만든 고정 인증서를 넘긴다
+              webhookTLS = {
+                caCert = tls_self_signed_cert.lbc_ca.cert_pem
+                cert   = tls_locally_signed_cert.lbc_webhook.cert_pem
+                key    = tls_private_key.lbc_webhook.private_key_pem
+              }
+            }
           }
-        }
-      }
+        },
+      ]
       destination = { server = local.in_cluster, namespace = "kube-system" }
       syncPolicy  = local.sync
     }
@@ -109,6 +126,42 @@ locals {
   }
 }
 
+# ---------------------------------------------------------------- LB Controller webhook 인증서 (10년, 클러스터 내부 전용)
+resource "tls_private_key" "lbc_ca" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "lbc_ca" {
+  private_key_pem       = tls_private_key.lbc_ca.private_key_pem
+  is_ca_certificate     = true
+  validity_period_hours = 87600
+  allowed_uses          = ["cert_signing", "key_encipherment", "digital_signature"]
+  subject { common_name = "aws-load-balancer-controller-ca" }
+}
+
+resource "tls_private_key" "lbc_webhook" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_cert_request" "lbc_webhook" {
+  private_key_pem = tls_private_key.lbc_webhook.private_key_pem
+  dns_names = [
+    "aws-load-balancer-webhook-service.kube-system.svc",
+    "aws-load-balancer-webhook-service.kube-system.svc.cluster.local",
+  ]
+  subject { common_name = "aws-load-balancer-webhook-service.kube-system.svc" }
+}
+
+resource "tls_locally_signed_cert" "lbc_webhook" {
+  cert_request_pem      = tls_cert_request.lbc_webhook.cert_request_pem
+  ca_private_key_pem    = tls_private_key.lbc_ca.private_key_pem
+  ca_cert_pem           = tls_self_signed_cert.lbc_ca.cert_pem
+  validity_period_hours = 87600
+  allowed_uses          = ["key_encipherment", "digital_signature", "server_auth"]
+}
+
 resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
@@ -119,9 +172,10 @@ resource "helm_release" "argocd" {
   wait             = true
 
   values = [yamlencode({
-    global  = { nodeSelector = { workload = "core" } }
-    dex     = { enabled = false }
-    configs = { params = { "server.insecure" = true } } # 접속은 kubectl port-forward
+    global        = { nodeSelector = { workload = "core" } }
+    dex           = { enabled = false }
+    notifications = { enabled = false }
+    configs       = { params = { "server.insecure" = true } } # 접속은 kubectl port-forward
   })]
 }
 

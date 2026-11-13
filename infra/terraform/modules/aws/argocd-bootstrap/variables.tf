@@ -28,6 +28,11 @@ variable "images" {
   description = "kustomize 이미지 이름 → 실제 이미지 (레지스트리/이름:태그)"
   type        = map(string)
 }
+variable "addon_replicas" {
+  description = "애드온 컨트롤러 레플리카 수 (학습 환경 1, 운영 2)"
+  type        = number
+  default     = 1
+}
 variable "argocd_chart_version" {
   description = "argo-cd Helm 차트 버전"
   type        = string
@@ -42,6 +47,11 @@ variable "lbc_chart_version" {
   description = "aws-load-balancer-controller Helm 차트 버전"
   type        = string
   default     = "3.6.2"
+}
+variable "gateway_api_version" {
+  description = "Gateway API 표준 CRD 버전 (LB Controller 가 빌드된 버전과 맞춤)"
+  type        = string
+  default     = "v1.6.0"
 }
 variable "eso_chart_version" {
   description = "external-secrets Helm 차트 버전"

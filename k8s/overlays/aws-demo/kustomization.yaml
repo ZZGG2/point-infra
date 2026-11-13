@@ -1,5 +1,5 @@
 # 검증용: overlays/aws + local 프로필(데모 사용자·잔액 시드, 데모 이벤트 evt-local, 로컬 관리 API)
-# 실서비스에는 쓰지 않는다. envs/aws-main 의 apps_path 로 선택.
+# 비용 최소화를 위해 레플리카 1. 실서비스에는 쓰지 않는다. envs/aws-main 의 apps_path 로 선택.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -11,3 +11,15 @@ configMapGenerator:
   - name: event-config
     behavior: merge
     literals: ["SPRING_PROFILES_ACTIVE=local,aws"]
+replicas:
+  - { name: monolith, count: 1 }
+  - { name: web, count: 1 }
+patches:
+  # 레플리카 1 에서 minAvailable 1 이면 노드 교체가 막히므로 데모에서는 완화
+  - target: { kind: PodDisruptionBudget }
+    patch: |-
+      - op: remove
+        path: /spec/minAvailable
+      - op: add
+        path: /spec/maxUnavailable
+        value: 1

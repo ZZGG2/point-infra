@@ -20,13 +20,6 @@ provider "aws" {
   default_tags { tags = local.tags }
 }
 
-# CloudFront 용 WAF 는 us-east-1 에만 생성 가능
-provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
-  default_tags { tags = local.tags }
-}
-
 provider "helm" {
   kubernetes {
     host                   = module.eks.cluster_endpoint

@@ -39,7 +39,16 @@ resource "aws_rds_cluster" "this" {
   final_snapshot_identifier       = var.deletion_protection ? "${var.name}-aurora-final" : null
   enable_http_endpoint            = true # RDS Data API: 앱 계정(app_rw) 초기 생성용 (VPC 밖에서 SQL 실행)
   apply_immediately               = true
-  tags                            = var.tags
+
+  # Data API 는 t 계열 인스턴스를 지원하지 않는다 → Serverless v2 (평시 최소 ACU, 이벤트 시 자동 확장)
+  dynamic "serverlessv2_scaling_configuration" {
+    for_each = var.instance_class == "db.serverless" ? [1] : []
+    content {
+      min_capacity = var.serverless_min_acu
+      max_capacity = var.serverless_max_acu
+    }
+  }
+  tags = var.tags
 }
 
 resource "aws_rds_cluster_instance" "this" {

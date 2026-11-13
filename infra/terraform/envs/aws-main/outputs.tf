@@ -1,19 +1,14 @@
 output "web_url" {
-  description = "서비스 접속 주소 (CloudFront)"
-  value       = "https://${module.edge.cloudfront_domain}"
+  description = "서비스 접속 주소 (Gateway ALB, alb_ingress_cidrs 에서만 접근 가능 — 도메인·ACM 전까지)"
+  value       = "http://${data.aws_lb.gateway.dns_name}"
 }
-output "alb_url" {
-  description = "ALB 직접 접근 (admin_cidrs 에서만, CloudFront 우회 확인용)"
-  value       = "http://${data.aws_lb.api.dns_name}"
-}
-output "web_bucket" { value = module.edge.web_bucket }
-output "cloudfront_distribution_id" { value = module.edge.cloudfront_distribution_id }
 output "ecr_repository_urls" { value = module.ecr.repository_urls }
 output "vpc_id" { value = module.vpc.vpc_id }
 output "eks_cluster_name" { value = module.eks.cluster_name }
-output "aurora_endpoint" { value = module.aurora.endpoint }
+output "rds_endpoint" { value = module.rds.address }
 output "redis_endpoint" { value = module.elasticache.primary_endpoint }
 output "msk_bootstrap_brokers_tls" { value = module.msk.bootstrap_brokers_tls }
+output "waf_arn" { value = module.waf.web_acl_arn }
 output "kubeconfig_command" {
   value = "aws eks update-kubeconfig --region ${var.region} --name ${module.eks.cluster_name}"
 }
