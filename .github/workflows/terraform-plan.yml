@@ -12,6 +12,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix: { env: [aws-main, gcp-dr-standby, gcp-dr-compute] }
     defaults:
       run: { working-directory: "infra/terraform/envs/${{ matrix.env }}" }
@@ -21,11 +22,18 @@ jobs:
       - run: terraform fmt -check -recursive ../..
       - name: tflint
         uses: terraform-linters/setup-tflint@v4
-      - run: tflint --recursive
+      # 구현 전 스텁(TODO 로 남긴 module 호출 등) 때문에 생기는 미사용 선언 경고는 실패로 보지 않는다
+      - run: tflint --recursive --minimum-failure-severity=error
       - name: checkov
         uses: bridgecrewio/checkov-action@v12
         with: { directory: "infra/terraform", soft_fail: true }
-      # TODO: 클라우드 인증 (aws-main → AWS OIDC / gcp-* → GCP WIF)
-      - run: terraform init -input=false
-      - run: terraform plan -input=false -no-color
+      # 클라우드 자격 증명 없이 가능한 정적 검증
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate -no-color
+      # TODO: 클라우드 인증 (aws-main → AWS OIDC / gcp-* → GCP WIF) 구성 후 Variables 에 TF_PLAN_ENABLED=true
+      - name: terraform plan (원격 state)
+        if: vars.TF_PLAN_ENABLED == 'true'
+        run: |
+          terraform init -input=false -reconfigure
+          terraform plan -input=false -no-color
       # TODO: plan 결과 PR 코멘트

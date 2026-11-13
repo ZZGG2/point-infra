@@ -1,12 +1,22 @@
-# 보안 업데이트는 자동, 버전 업데이트는 월 1회 묶음 (github-workflow.md §11)
+# 버전 업데이트는 월 1회 묶음. 메이저 업그레이드는 마이그레이션이 필요하므로 자동 PR 에서 제외하고 계획해서 수동 진행한다
+# PR 제목은 Conventional Commits 형식 (chore(deps): / ci(deps):)
 version: 2
 updates:
   - package-ecosystem: "terraform"
     directory: "/infra/terraform/envs/aws-main"
     schedule: { interval: "monthly" }
     open-pull-requests-limit: 3
+    commit-message: { prefix: "chore", include: "scope" }
     groups:
-      all: { patterns: ["*"] }
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule: { interval: "monthly" }
+    commit-message: { prefix: "ci", include: "scope" }
+    groups:
+      actions:
+        patterns: ["*"]

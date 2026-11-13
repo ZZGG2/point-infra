@@ -1,5 +1,5 @@
 # GKE에 ArgoCD 설치 + root Application(App of Apps) 1개만 생성.
-# 이후 모든 워크로드는 Git(k8s/argocd/root-gcp-dr.yaml)이 채운다. (ADR-0009)
+# 이후 모든 워크로드는 Git(k8s/argocd/gcp-dr/)이 채운다. (ADR-0009)
 resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
