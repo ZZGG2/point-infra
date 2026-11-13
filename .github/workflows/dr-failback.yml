@@ -12,5 +12,5 @@ jobs:
     runs-on: ubuntu-latest
     environment: dr-production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: echo "TODO - dr-runbook.md §3 절차 자동화"

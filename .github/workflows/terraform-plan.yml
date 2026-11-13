@@ -17,11 +17,11 @@ jobs:
     defaults:
       run: { working-directory: "infra/terraform/envs/${{ matrix.env }}" }
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
       - run: terraform fmt -check -recursive ../..
       - name: tflint
-        uses: terraform-linters/setup-tflint@v4
+        uses: terraform-linters/setup-tflint@v6
       # 구현 전 스텁(TODO 로 남긴 module 호출 등) 때문에 생기는 미사용 선언 경고는 실패로 보지 않는다
       - run: tflint --recursive --minimum-failure-severity=error
       - name: checkov
