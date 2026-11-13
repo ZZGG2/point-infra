@@ -140,7 +140,7 @@ resource "aws_secretsmanager_secret_version" "db_bootstrap" {
 # ---------------------------------------------------------------- 애드온 IAM (EKS Pod Identity)
 module "lbc_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "~> 1.12"
+  version = "~> 2.10"
 
   name                            = "${local.name}-aws-lbc"
   attach_aws_lb_controller_policy = true
@@ -152,7 +152,7 @@ module "lbc_pod_identity" {
 
 module "eso_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "~> 1.12"
+  version = "~> 2.10"
 
   name                                  = "${local.name}-external-secrets"
   attach_external_secrets_policy        = true
