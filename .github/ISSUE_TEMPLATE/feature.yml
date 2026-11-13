@@ -1,0 +1,25 @@
+name: "✨ Feature"
+description: 새 기능 / 개선
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: goal
+    attributes: { label: 목적, description: 왜 필요한가 (사용자/비즈니스 관점) }
+    validations: { required: true }
+  - type: textarea
+    id: scope
+    attributes:
+      label: 작업 범위
+      description: 수정할 디렉터리/파일. AI에게도 이 범위를 그대로 전달합니다.
+      placeholder: "event-service/src/main/java/.../quiz/"
+    validations: { required: true }
+  - type: textarea
+    id: done
+    attributes: { label: 완료 조건 (DoD), placeholder: "- [ ] ...\n- [ ] 테스트 ..." }
+    validations: { required: true }
+  - type: textarea
+    id: refs
+    attributes: { label: 참고 문서 / 연계 이슈, placeholder: "ADR-0007, point-frontend#12" }
+  - type: dropdown
+    id: size
+    attributes: { label: 예상 크기, options: ["S (반나절)", "M (1~2일)", "L (3일 — 쪼개기 검토)"] }

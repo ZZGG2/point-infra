@@ -1,0 +1,28 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+crash.log
+# Java / Gradle
+build/
+.gradle/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+# Secrets
+.env
+*.pem
+*-key.json
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Terraform backend (계정 ID 포함)
+backend.hcl

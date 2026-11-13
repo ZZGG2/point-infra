@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-service
+  labels: { app: event-service }
+spec:
+  selector:
+    matchLabels: { app: event-service }
+  template:
+    metadata:
+      labels: { app: event-service }
+    spec:
+      nodeSelector: { workload: event }          # Karpenter NodePool "event"
+      tolerations:
+        - { key: workload, value: event, effect: NoSchedule }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: { matchLabels: { app: event-service } }
+      securityContext: { runAsNonRoot: true, runAsUser: 10001 }
+      containers:
+        - name: event-service
+          image: event-service:latest
+          ports: [{ containerPort: 8081 }]
+          envFrom:
+            - configMapRef: { name: event-config }
+            - secretRef: { name: event-service-env }  # Redis·Kafka 엔드포인트 (External Secrets 가 생성)
+          resources:
+            requests: { cpu: "1", memory: 1Gi }
+            limits: { memory: 1Gi }
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8081 }
+          lifecycle:
+            preStop: { exec: { command: ["sleep", "10"] } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-service
+spec:
+  selector: { app: event-service }
+  ports: [{ port: 80, targetPort: 8081 }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: event-service
+spec:
+  maxUnavailable: 20%
+  selector:
+    matchLabels: { app: event-service }

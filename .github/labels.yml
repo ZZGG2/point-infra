@@ -1,0 +1,27 @@
+# scripts/setup-github.sh 가 이 파일로 라벨을 생성/갱신한다
+- { name: "type:feature", color: "1d76db", description: "새 기능" }
+- { name: "type:bug", color: "d73a4a", description: "버그" }
+- { name: "type:infra", color: "5319e7", description: "인프라 변경" }
+- { name: "type:docs", color: "0075ca", description: "문서" }
+- { name: "type:adr", color: "fbca04", description: "아키텍처 결정" }
+- { name: "type:chore", color: "cfd3d7", description: "설정·잡무" }
+- { name: "P0", color: "b60205", description: "즉시" }
+- { name: "P1", color: "d93f0b", description: "이번 스프린트" }
+- { name: "P2", color: "fef2c0", description: "여유 있을 때" }
+- { name: "area:user", color: "c2e0c6", description: "" }
+- { name: "area:asset", color: "c2e0c6", description: "" }
+- { name: "area:point", color: "c2e0c6", description: "" }
+- { name: "area:event", color: "c2e0c6", description: "" }
+- { name: "area:cs", color: "c2e0c6", description: "" }
+- { name: "area:network", color: "bfdadc", description: "" }
+- { name: "area:dr", color: "bfdadc", description: "" }
+- { name: "area:cicd", color: "bfdadc", description: "" }
+- { name: "env:aws-main", color: "f9d0c4", description: "Terraform 환경 선점" }
+- { name: "env:gcp-dr-standby", color: "f9d0c4", description: "Terraform 환경 선점" }
+- { name: "env:gcp-dr-compute", color: "f9d0c4", description: "Terraform 환경 선점" }
+- { name: "blocked", color: "000000", description: "선행 작업 대기" }
+- { name: "needs-discussion", color: "e99695", description: "합의 필요" }
+- { name: "breaking-change", color: "b60205", description: "하위 호환 깨짐" }
+- { name: "cross-repo", color: "0e8a16", description: "다른 레포 연계" }
+- { name: "good-first-issue", color: "7057ff", description: "" }
+- { name: "ai-assisted", color: "ededed", description: "AI 생성 코드 포함" }

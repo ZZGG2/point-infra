@@ -1,0 +1,17 @@
+# 이벤트 시간대 배포 금지 (매주 수요일 09:30~11:00 KST)
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+spec:
+  sourceRepos: ["*"]
+  destinations: [{ server: "*", namespace: "*" }]
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
+  syncWindows:
+    - kind: deny
+      schedule: "30 9 * * 3"
+      duration: 1h30m
+      timeZone: Asia/Seoul
+      applications: ["apps-aws"]
+      manualSync: false

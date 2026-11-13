@@ -1,0 +1,19 @@
+# GKE(DR) 용 — Terraform(argocd-bootstrap)이 이 경로를 root 로 등록
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps-gcp-dr
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/CHANGE_ME_ORG/point-infra.git
+    targetRevision: main
+    path: k8s/overlays/gcp-dr
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: point
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]
+# TODO: external-secrets (gcp-sm), kube-prometheus-stack

@@ -1,0 +1,24 @@
+name: "🏗️ Infra"
+description: Terraform / K8s / CI·CD / 네트워크 변경
+labels: ["type:infra"]
+body:
+  - type: dropdown
+    id: env
+    attributes:
+      label: 대상 환경 (선점 라벨 env:* 도 함께 지정)
+      multiple: true
+      options: [aws-main, gcp-dr-standby, gcp-dr-compute, k8s, ci-cd]
+    validations: { required: true }
+  - type: textarea
+    id: change
+    attributes: { label: 변경 내용 }
+    validations: { required: true }
+  - type: textarea
+    id: risk
+    attributes:
+      label: 영향 / 리스크
+      description: 재생성(replace) 되는 리소스, 다운타임, 비용 변화, DR 영향
+    validations: { required: true }
+  - type: textarea
+    id: rollback
+    attributes: { label: 롤백 방법 }

@@ -1,0 +1,8 @@
+name: "🧹 Task"
+description: 문서, 설정, 잡무
+labels: ["type:chore"]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: 할 일 }
+    validations: { required: true }

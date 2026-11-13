@@ -1,0 +1,16 @@
+{
+  "name": "cloudsql-jdbc-sink",
+  "config": {
+    "connector.class": "io.debezium.connector.jdbc.JdbcSinkConnector",
+    "topics.regex": "cdc\\.(users|asset|point|public)\\..*",
+    "connection.url": "jdbc:postgresql://${CLOUDSQL_PRIVATE_IP}:5432/point?sslmode=require",
+    "connection.username": "sink_writer",
+    "connection.password": "${secretManager:point/sink-writer:password}",
+    "insert.mode": "upsert",
+    "delete.enabled": "true",
+    "primary.key.mode": "record_key",
+    "schema.evolution": "none",
+    "collection.name.format": "${source.schema}.${source.table}",
+    "tasks.max": "3"
+  }
+}

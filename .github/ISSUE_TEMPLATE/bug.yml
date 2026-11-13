@@ -1,0 +1,21 @@
+name: "🐛 Bug"
+description: 버그 신고
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: 현상 }
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes: { label: 재현 방법, placeholder: "1. ...\n2. ..." }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: 기대 동작 }
+  - type: dropdown
+    id: env
+    attributes: { label: 환경, options: [local, aws-main, gcp-dr] }
+  - type: textarea
+    id: logs
+    attributes: { label: 로그 / 스크린샷 (시크릿 마스킹 필수), render: shell }

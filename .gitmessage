@@ -1,0 +1,6 @@
+# <type>(<scope>): <요약 50자 이내>
+# type: feat fix infra docs test refactor chore ci hotfix
+#
+# 본문: 무엇을, 왜 (어떻게는 코드가 설명)
+#
+# Refs: #이슈번호

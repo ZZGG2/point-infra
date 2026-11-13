@@ -1,0 +1,27 @@
+# KEDA: 예약형(Cron) 사전 확장 + 반응형(CPU) 2차 방어 (ADR-0002)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: event-service
+spec:
+  scaleTargetRef:
+    name: event-service
+  minReplicaCount: 1
+  maxReplicaCount: 100
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:   { stabilizationWindowSeconds: 0 }
+        scaleDown: { stabilizationWindowSeconds: 300 }
+  triggers:
+    # 매주 수요일 09:55 ~ 10:30 (이벤트 5분 전 확장)
+    - type: cron
+      metadata:
+        timezone: Asia/Seoul
+        start: "55 9 * * 3"
+        end: "30 10 * * 3"
+        desiredReplicas: "40"
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "60"

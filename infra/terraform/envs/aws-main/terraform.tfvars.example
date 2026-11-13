@@ -1,0 +1,11 @@
+# cp terraform.tfvars.example terraform.tfvars
+single_nat_gateway = true
+
+# 검증용: 데모 사용자/잔액·데모 이벤트(evt-local) 시드 포함 오버레이
+apps_path = "k8s/overlays/aws-demo"
+
+# scripts/aws/up.ps1 이 백엔드 git 커밋으로 자동 지정
+# image_tag = "sha-abc1234"
+
+# 비우면 terraform 실행 PC 의 공인 IP 만 EKS API / ALB 직접 접근 허용
+# admin_cidrs = ["1.2.3.4/32"]

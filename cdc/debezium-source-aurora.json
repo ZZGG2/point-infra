@@ -1,0 +1,24 @@
+{
+  "name": "aurora-pg-source",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "plugin.name": "pgoutput",
+    "database.hostname": "${AURORA_WRITER_ENDPOINT}",
+    "database.port": "5432",
+    "database.user": "debezium",
+    "database.password": "${secretManager:point/debezium:password}",
+    "database.dbname": "point",
+    "database.sslmode": "require",
+    "topic.prefix": "cdc",
+    "slot.name": "debezium_slot",
+    "publication.name": "dr_publication",
+    "publication.autocreate.mode": "disabled",
+    "table.include.list": "users.app_user,users.user_credential,asset.linked_account,point.point_wallet,point.point_ledger,point.refund_request,public.dr_heartbeat",
+    "snapshot.mode": "initial",
+    "heartbeat.interval.ms": "1000",
+    "heartbeat.action.query": "UPDATE public.dr_heartbeat SET ts = now() WHERE id = 1",
+    "tombstones.on.delete": "true",
+    "decimal.handling.mode": "precise",
+    "time.precision.mode": "adaptive_time_microseconds"
+  }
+}

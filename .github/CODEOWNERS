@@ -1,0 +1,11 @@
+# 마지막으로 매칭되는 규칙이 우선. 팀원 GitHub ID로 교체할 것.
+*                                    @CHANGE_ME_ORG/infra
+/infra/terraform/envs/               @CHANGE_ME_ORG/infra @CHANGE_ME_INFRA_LEAD
+/infra/terraform/modules/shared/vpn/ @CHANGE_ME_ORG/infra @CHANGE_ME_INFRA_LEAD
+/docs/06-disaster-recovery/          @CHANGE_ME_ORG/infra @CHANGE_ME_INFRA_LEAD
+/.github/workflows/dr-*.yml          @CHANGE_ME_INFRA_LEAD
+/cdc/                                @CHANGE_ME_ORG/infra @CHANGE_ME_ORG/backend
+/k8s/                                @CHANGE_ME_ORG/infra
+/docs/02-adr/                        @CHANGE_ME_ORG/all
+/docs/team/                          @CHANGE_ME_ORG/all
+/team/ai/                            @CHANGE_ME_ORG/all

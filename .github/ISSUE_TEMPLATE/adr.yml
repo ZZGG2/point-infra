@@ -1,0 +1,19 @@
+name: "📐 ADR 제안"
+description: 확정된 기술 결정의 변경 또는 신규 결정
+labels: ["type:adr", "needs-discussion"]
+body:
+  - type: input
+    id: target
+    attributes: { label: 대체/관련 ADR, placeholder: "ADR-0002" }
+  - type: textarea
+    id: context
+    attributes: { label: 맥락 (왜 지금 결정이 필요한가) }
+    validations: { required: true }
+  - type: textarea
+    id: options
+    attributes: { label: 대안 비교 (장점/단점/비용) }
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes: { label: 제안 }
+    validations: { required: true }

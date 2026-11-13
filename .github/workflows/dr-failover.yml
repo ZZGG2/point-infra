@@ -1,0 +1,65 @@
+# AWS 리전/사업자 장애 시 GCP Pilot Light 가동
+# 설계: docs/06-disaster-recovery/dr-runbook.md
+# AWS 리소스에 의존하는 단계가 없어야 한다 (ADR-0010)
+name: dr-failover
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "장애 선언 사유 (인시던트 번호 등)"
+        required: true
+      drill:
+        description: "DR 훈련 여부 (true 면 DNS 전환 생략)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency: { group: dr, cancel-in-progress: false }
+
+jobs:
+  failover:
+    runs-on: ubuntu-latest          # GitHub-hosted (AWS 비의존)
+    environment: dr-production      # Required reviewers 승인 필요 (ADR-0011)
+    timeout-minutes: 40
+    env:
+      DRILL: ${{ inputs.drill }}   # true 면 실 Cloud SQL 대신 클론 인스턴스를 승격 (복제 유지)
+    steps:
+      - uses: actions/checkout@v4
+      - name: 시작 시각 기록
+        run: echo "START=$(date +%s)" >> $GITHUB_ENV
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DR_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: "[3] 마지막 복제 시각 기록 (실제 RPO)"
+        run: ./scripts/dr/record-rpo.sh
+
+      - name: "[4] Cloud SQL 승격 (계정 전환, 시퀀스 보정)"
+        run: ./scripts/dr/promote-cloudsql.sh
+
+      - name: "[5-6] GKE + ArgoCD 생성"
+        working-directory: infra/terraform/envs/gcp-dr-compute
+        run: |
+          terraform init -input=false
+          terraform apply -auto-approve -input=false
+
+      - name: "[7] monolith Ready 대기"
+        run: ./scripts/dr/wait-ready.sh
+
+      - name: "[8] DNS 전환"
+        if: ${{ !inputs.drill }}
+        run: ./scripts/dr/switch-dns.sh to-gcp
+
+      - name: "[9] 스모크 테스트"
+        run: ./scripts/dr/smoke-test.sh
+
+      - name: RTO 기록
+        if: always()
+        run: echo "RTO(승인 후) = $(( $(date +%s) - START ))초" | tee -a $GITHUB_STEP_SUMMARY

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 팀 규칙 / 설계 문서
+    url: https://github.com/CHANGE_ME_ORG/point-infra/tree/main/docs
+    about: 이슈 작성 전 관련 문서를 확인하세요

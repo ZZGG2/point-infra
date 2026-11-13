@@ -1,0 +1,16 @@
+name: dr-failback
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "'FAILBACK' 입력 시 실행"
+        required: true
+
+jobs:
+  failback:
+    if: inputs.confirm == 'FAILBACK'
+    runs-on: ubuntu-latest
+    environment: dr-production
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "TODO - dr-runbook.md §3 절차 자동화"
