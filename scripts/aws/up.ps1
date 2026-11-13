@@ -27,17 +27,17 @@ $tag = if ($dirty) { "sha-$sha-$(Get-Date -Format 'yyyyMMddHHmm')" } else { "sha
 Write-Host "==> image tag: $tag"
 
 Write-Host '==> [1/4] terraform init + ECR'
-Invoke-Checked { terraform -chdir="$envDir" init -input=false -backend-config=backend.hcl } 'terraform init'
-Invoke-Checked { terraform -chdir="$envDir" apply -input=false @approve -target='module.ecr' } 'ECR apply'
+Invoke-Checked { terraform "-chdir=$envDir" init -input=false "-backend-config=backend.hcl" } 'terraform init'
+Invoke-Checked { terraform "-chdir=$envDir" apply -input=false @approve "-target=module.ecr" } 'ECR apply'
 
 Write-Host '==> [2/4] 백엔드 이미지 빌드·푸시'
 & (Join-Path $PSScriptRoot 'build-push.ps1') -BackendDir $BackendDir -Tag $tag
 
 Write-Host '==> [3/4] terraform apply (전체, 30~45분: MSK 생성 + ArgoCD 동기화 + ALB 대기)'
-Invoke-Checked { terraform -chdir="$envDir" apply -input=false @approve -var "image_tag=$tag" } 'terraform apply'
+Invoke-Checked { terraform "-chdir=$envDir" apply -input=false @approve -var "image_tag=$tag" } 'terraform apply'
 
 Write-Host '==> [4/4] 프론트엔드 빌드·업로드'
 & (Join-Path $PSScriptRoot 'deploy-frontend.ps1') -FrontendDir $FrontendDir
 
 Write-Host ''
-terraform -chdir="$envDir" output web_url
+terraform "-chdir=$envDir" output web_url

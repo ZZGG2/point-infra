@@ -37,5 +37,5 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 Write-Host '==> terraform destroy'
-terraform -chdir="$envDir" destroy -input=false @approve
+terraform "-chdir=$envDir" destroy -input=false @approve
 if ($LASTEXITCODE -ne 0) { throw 'terraform destroy 실패' }

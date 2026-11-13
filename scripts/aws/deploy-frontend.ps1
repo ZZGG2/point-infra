@@ -8,8 +8,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $envDir = Resolve-Path (Join-Path $PSScriptRoot '..\..\infra\terraform\envs\aws-main')
-$bucket = (terraform -chdir="$envDir" output -raw web_bucket).Trim()
-$distId = (terraform -chdir="$envDir" output -raw cloudfront_distribution_id).Trim()
+$bucket = (terraform "-chdir=$envDir" output -raw web_bucket).Trim()
+$distId = (terraform "-chdir=$envDir" output -raw cloudfront_distribution_id).Trim()
 
 Push-Location $FrontendDir
 try {

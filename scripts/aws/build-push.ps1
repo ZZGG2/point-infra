@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 $envDir = Resolve-Path (Join-Path $PSScriptRoot '..\..\infra\terraform\envs\aws-main')
 $region = 'ap-northeast-2'
 
-$repos = terraform -chdir="$envDir" output -json ecr_repository_urls | ConvertFrom-Json
+$repos = terraform "-chdir=$envDir" output -json ecr_repository_urls | ConvertFrom-Json
 $registry = ($repos.monolith -split '/')[0]
 
 aws ecr get-login-password --region $region | docker login --username AWS --password-stdin $registry
