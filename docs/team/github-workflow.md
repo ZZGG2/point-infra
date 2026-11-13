@@ -150,7 +150,7 @@ Refs: #42
 | 레포 | 버전 | 태그 | 산출물 |
 |---|---|---|---|
 | backend | SemVer `v0.x.y` | main 머지 시 이미지 태그 = `sha-<7자리>`, 릴리스 시 `v0.3.0` | ECR / Artifact Registry 이미지 |
-| frontend | SemVer | 동일 | 정적 빌드 |
+| frontend | SemVer | 동일 | web 컨테이너 이미지 태그 (Git SHA) — ECR / Artifact Registry |
 | infra | 태그 없음 (main = 현재 상태) | DR 훈련 시점 태그 `drill-YYYYMMDD` | - |
 
 - 릴리스 노트: GitHub Releases 자동 생성 (Squash 커밋 제목 기준) — Conventional Commits가 중요한 이유.

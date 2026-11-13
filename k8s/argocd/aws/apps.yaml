@@ -7,7 +7,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/CHANGE_ME_ORG/point-infra.git
+    repoURL: https://github.com/ZZGG2/point-infra.git
     targetRevision: main
     path: k8s/overlays/aws
   destination:
@@ -25,7 +25,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/CHANGE_ME_ORG/point-infra.git
+    repoURL: https://github.com/ZZGG2/point-infra.git
     targetRevision: main
     path: k8s/platform/karpenter
   destination:

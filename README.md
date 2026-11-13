@@ -73,8 +73,8 @@
 | 레포 | 내용 |
 |---|---|
 | **point-infra** (이 레포) | Terraform, K8s(GitOps), CDC, DR, 부하 테스트, **설계 문서 · 팀 규칙 원본** |
-| [point-backend](https://github.com/CHANGE_ME_ORG/point-backend) | Spring Boot — monolith, event-service, OpenAPI |
-| [point-frontend](https://github.com/CHANGE_ME_ORG/point-frontend) | React + Vite + TypeScript SPA |
+| [point-backend](https://github.com/ZZGG2/point-backend) | Spring Boot — monolith, event-service, OpenAPI |
+| [point-frontend](https://github.com/ZZGG2/point-frontend) | React + Vite + TypeScript SPA |
 
 분리 이유: [ADR-0012](docs/02-adr/0012-polyrepo-split.md)
 

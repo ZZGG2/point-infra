@@ -1,5 +1,5 @@
 # ADR-0012: 레포지토리 분리 (infra / backend / frontend)
-- 상태: Accepted · 날짜: 2026-11-05
+- 상태: Accepted · 날짜: 2026-11-05 · 갱신: point-frontend 배포 산출물은 ADR-0015 에 따라 web 컨테이너 이미지 (ECR + Artifact Registry)
 
 ## 맥락
 팀 공동 개발로 전환하면서 인프라·백엔드·프론트 작업자가 동시에 같은 레포를 수정하게 됐다. 빌드 도구, CI 트리거, 리뷰어, 배포 주기가 영역마다 다르다.

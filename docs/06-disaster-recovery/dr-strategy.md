@@ -45,12 +45,15 @@
 | 단계 | 작업 | 목표 시간 | 누적 |
 |---|---|---|---|
 | T0 | 알람 → 온콜 판단 → 장애 선언 & 워크플로 승인 | 5분 | 5분 |
-| T1 | Cloud SQL 승격 준비 (sink 정지 확인, 시퀀스 보정, 계정 전환) | 2분 | 7분 |
-| T2 | `gcp-dr-compute` Terraform apply (GKE + 노드풀) | 10~12분 | 19분 |
-| T3 | ArgoCD Helm 설치 + root App 동기화 | 3분 | 22분 |
-| T4 | External Secrets 동기화, monolith Ready | 3분 | 25분 |
-| T5 | Route 53 전환 + DNS 전파 (TTL 60s) | 2분 | 27분 |
-| T6 | 스모크 테스트 (로그인, 잔액 조회) | 2분 | **29분** |
+| T1 | Cloud SQL 준비 (gcloud API — 드릴이면 클론) | 1분 | 6분 |
+| T2 | `gcp-dr-compute` Terraform apply (GKE + 노드풀) | 10~11분 | 17분 |
+| T3 | ArgoCD Helm 설치 + root App 동기화 | 3분 | 20분 |
+| T4 | 클러스터 내부 Job: RPO 근거 기록, Cloud SQL 승격 (sink 차단, 계정 전환, 시퀀스·지갑 잔액 보정) | 2분 | 22분 |
+| T5 | External Secrets 동기화, monolith Ready | 3분 | 25분 |
+| T6 | Route 53 전환 + DNS 전파 (TTL 60s) | 2분 | 27분 |
+| T7 | 스모크 테스트 (로그인, 잔액 조회) | 2분 | **29분** |
+
+> Cloud SQL 은 Private IP 전용 → GitHub runner 에서 SQL 을 실행할 수 없으므로 DB 작업(T4)은 GKE 생성(T2) 이후 클러스터 내부에서 수행한다. DNS 전환 방식은 [dr-runbook §4](dr-runbook.md), ADR-0016(Proposed).
 
 **RTO 단축 옵션 (트레이드오프 문서화용):**
 | 옵션 | 효과 | 비용 |
@@ -64,6 +67,7 @@
 |---|---|
 | 장애 시점 미복제 데이터 (≤ RPO) | Failback 시 RDS WAL/로그와 비교해 누락분 식별·보정 |
 | 시퀀스 | `scripts/dr/fix-sequences.sql` 로 `max(id) + 100000` 보정 |
+| 원장 ↔ 지갑 잔액 불일치 (테이블별 토픽 병렬 반영 → 트랜잭션 원자성 없음) | `scripts/dr/reconcile-wallet.sql` 로 지갑을 사용자별 마지막 `balance_after` 에 맞춤, 불일치 내역은 Failback 대사 자료로 보관 |
 | Kafka에 있었으나 미반영된 reward | DR 중에는 처리 불가 → Failback 후 consumer 재개로 자동 반영 (멱등) |
 | Redis 당첨 기록 | 소실 가능 → Failback 후 Kafka 토픽 기준 대사 |
 

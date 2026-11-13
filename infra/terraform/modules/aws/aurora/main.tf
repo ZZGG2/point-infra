@@ -1,4 +1,5 @@
 # Aurora PostgreSQL — Debezium CDC를 위해 논리 복제 활성화 (ADR-0005, 0006)
+# ※ ADR-0006 은 ADR-0013(RDS for PostgreSQL)으로 대체됨 → 구현 단계에서 modules/aws/rds 로 교체 예정
 resource "aws_rds_cluster_parameter_group" "this" {
   name   = "${var.name}-aurora-pg16"
   family = "aurora-postgresql16"

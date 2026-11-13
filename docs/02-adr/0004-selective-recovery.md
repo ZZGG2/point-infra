@@ -1,5 +1,5 @@
 # ADR-0004: DR 시 선택적 복구 (모놀리스만)
-- 상태: Accepted · 날짜: 2026-11-05
+- 상태: Accepted · 날짜: 2026-11-05 · 용어 갱신: 본문의 "Ingress" 는 ADR-0014 의 Gateway API(HTTPRoute) 로 읽는다
 
 ## 맥락
 DR 환경에 이벤트 MSA까지 띄우면 Redis, Kafka, 대규모 노드 풀까지 필요해 RTO와 비용이 모두 커진다. 그러나 이벤트는 연기해도 고객 손실이 거의 없다.

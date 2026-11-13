@@ -65,7 +65,7 @@ Route 53 ── Failover Record (Primary: AWS ALB / Secondary: GCP Static IP)
 
 ### 4.2 이벤트 — 퀴즈 정답 포인트 지급
 1. `POST /api/events/{id}/answers` → event-service
-2. Redis `SET event:{id}:user:{uid} NX` 로 중복 참여 차단
+2. Redis `SADD event:{id}:participants` (Set) 로 중복 참여 차단 — 2~3단계와 당첨자 기록은 Lua 한 번으로 원자 처리 (ADR-0007)
 3. Redis `DECR event:{id}:stock` ≥ 0 이면 당첨 (Lua로 원자 처리)
 4. 당첨 시 Kafka `point.reward.requested` 발행 (key=userId, idempotencyKey=eventId:userId)
 5. 클라이언트에는 즉시 "지급 예정" 응답 (202 Accepted)

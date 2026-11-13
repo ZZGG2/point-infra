@@ -5,5 +5,5 @@ variable "region" {
 }
 variable "git_repo_url" {
   type    = string
-  default = "https://github.com/CHANGE_ME_ORG/point-infra.git"
+  default = "https://github.com/ZZGG2/point-infra.git"
 }

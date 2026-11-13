@@ -1,9 +1,9 @@
 {
-  "name": "aurora-pg-source",
+  "name": "rds-pg-source",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "plugin.name": "pgoutput",
-    "database.hostname": "${AURORA_WRITER_ENDPOINT}",
+    "database.hostname": "${RDS_ENDPOINT}",
     "database.port": "5432",
     "database.user": "debezium",
     "database.password": "${secretManager:point/debezium:password}",

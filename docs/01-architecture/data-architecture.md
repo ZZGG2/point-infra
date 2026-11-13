@@ -52,6 +52,7 @@ RDS for PostgreSQL (wal_level=logical, rds.logical_replication=1)
 |---|---|
 | DDL은 CDC로 복제되지 않음 | Flyway 마이그레이션을 **AWS·GCP 양쪽에 적용**하는 CI 단계 추가 |
 | 시퀀스 값은 복제되지 않음 | Failover 시 `setval(max(id)+버퍼)` 스크립트 실행 |
+| 테이블별 토픽을 병렬 반영 → 트랜잭션 원자성 없음 (원장만 반영되고 지갑은 이전 값인 상태로 끊길 수 있음) | Failover 시 지갑을 원장 기준으로 보정 (`scripts/dr/reconcile-wallet.sql`) |
 | Replication Slot 미소비 시 WAL 누적 → RDS 스토리지 증가 (max_allocated_storage 자동 확장) | `OldestReplicationSlotLag` 알람 |
 | Sink가 쓰는 Cloud SQL에 앱이 쓰면 충돌 | 평시 앱 계정 쓰기 권한 없음, sink 전용 계정만 |
 | 초기 데이터 적재 | Debezium `snapshot.mode=initial` |
@@ -60,7 +61,8 @@ RDS for PostgreSQL (wal_level=logical, rds.logical_replication=1)
 
 - **RPO = 장애 시점에 RDS에 커밋되었으나 Cloud SQL에 반영되지 않은 데이터의 시간 폭**
 - 측정: RDS의 `commit_ts` vs Cloud SQL 반영 시각 (heartbeat 테이블 사용)
-  - Debezium `heartbeat.action.query`로 1초마다 `dr_heartbeat` 갱신 → Cloud SQL에서 `now() - max(ts)` = 복제 Lag
+  - Debezium `heartbeat.action.query`로 1초마다 `dr_heartbeat` 갱신 → 평시·드릴: Cloud SQL에서 `now() - ts` = **복제 Lag** (모니터링 지표)
+  - 실제 장애 후에는 `now() - ts` 가 "장애 후 경과 시간" 이 되므로 RPO 로 쓰지 않는다 → `ts`(마지막 복제 시각)와 `max(point_ledger.created_at)`(마지막 원장 시각)를 기록하고, RPO = Main 중단 시각 − 마지막 복제 시각 ([cdc/README](../../cdc/README.md))
 - 목표: **Lag p99 ≤ 5초** → "RPO near-zero" 근거로 대시보드 캡처 제출
 - RPO가 0이 아닌 이유: 비동기 복제. 동기 복제는 클라우드 간 RTT(수십 ms)가 모든 커밋에 더해져 원장 쓰기 성능을 희생하므로 채택하지 않음. → [ADR-0005](../02-adr/0005-cdc-debezium-replication.md)
 

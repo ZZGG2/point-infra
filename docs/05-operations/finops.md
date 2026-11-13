@@ -9,7 +9,7 @@
 | monolith 컴퓨팅 | On-Demand 고정 (소형 2대) | 동일 | GKE 소형 노드풀 |
 | event 컴퓨팅 | 0~1 노드 | Karpenter Spot 확장 | **0 (배포 안 함)** |
 | DB | RDS PostgreSQL | 동일 | Cloud SQL (이미 존재) |
-| DR 상시 비용 | Cloud SQL + VPN + Static IP | 동일 | + GKE |
+| DR 상시 비용 | Cloud SQL + VPN (양측 터널) + MSK Connect (CDC) + Static IP | 동일 | + GKE |
 
 ## 2. DR 전략별 비용 비교 (산정 틀)
 
@@ -23,6 +23,18 @@
 | RTO | ~0 | 수 분 | ≤ 30분 |
 
 → 실측 후 `월 $` 값으로 표를 채워 포트폴리오에 첨부.
+
+### Pilot Light 상시 고정비 (트래픽과 무관하게 24시간 과금)
+| 항목 | 과금 단위 | 비고 |
+|---|---|---|
+| Cloud SQL (DR sink) | 인스턴스 vCPU·메모리 시간 + 스토리지 | 축소 사양, `prevent_destroy` 로 상시 유지 |
+| AWS Site-to-Site VPN | **VPN 연결 시간당** (터널 2개 포함) + 전송량 | HA 구성 시 연결 수만큼 증가 |
+| GCP HA VPN | **터널 시간당** (HA = 터널 2개 이상) + 이그레스 | AWS 쪽과 별도로 양측 모두 과금 |
+| MSK Connect (Debezium Source + JDBC Sink) | **MCU 시간당** × 워커 수 × 커넥터 2개 | CDC 가 끊기면 RPO 가 무너지므로 0 으로 내릴 수 없음 |
+| 클라우드 간 데이터 전송 | AWS 아웃바운드 GB 당 | CDC 변경량에 비례 (평시 작음) |
+| GCP Static IP | 예약 IP 시간당 | 미사용 상태 예약도 과금 |
+
+> **트레이드오프:** 위 항목은 관리형 서비스의 고정비라 트래픽이 작을수록 Main 대비 DR 비용 비중이 커진다. 소규모(학습·초기) 환경에서는 "~10~20%" 보다 높게 나올 수 있으며, 트래픽·데이터가 커질수록 비중이 내려간다. 실측 시 고정비(VPN·MCU·Cloud SQL)와 변동비(전송량)를 분리해 손익분기점을 기록한다.
 
 ## 3. 절감 레버
 

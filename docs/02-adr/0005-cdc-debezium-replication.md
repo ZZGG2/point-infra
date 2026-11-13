@@ -1,5 +1,5 @@
 # ADR-0005: Debezium CDC 기반 비동기 복제
-- 상태: Accepted · 날짜: 2026-11-05
+- 상태: Accepted · 날짜: 2026-11-05 · 용어 갱신: 본문의 "Aurora" 는 ADR-0013 의 RDS for PostgreSQL 로 읽는다
 
 ## 맥락
 Aurora(AWS) → Cloud SQL(GCP)로 핵심 테이블을 실시간 복제해야 한다. 클라우드 관리형 복제는 클라우드 경계를 넘지 못한다.

@@ -1,4 +1,4 @@
--- Aurora에서 1회 실행: CDC 계정 및 복제 대상 테이블 지정
+-- RDS (PostgreSQL) 에서 1회 실행: CDC 계정 및 복제 대상 테이블 지정
 CREATE ROLE debezium WITH LOGIN PASSWORD :'debezium_password';
 GRANT rds_replication TO debezium;
 GRANT USAGE ON SCHEMA users, asset, point TO debezium;

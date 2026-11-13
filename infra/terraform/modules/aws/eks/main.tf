@@ -9,14 +9,18 @@ module "eks" {
   vpc_id     = var.vpc_id
   subnet_ids = var.subnet_ids
 
-  cluster_endpoint_public_access = true # TODO: 운영 시 허용 CIDR 제한 또는 private
+  cluster_endpoint_public_access           = true # TODO: 운영 시 허용 CIDR 제한 또는 private
   enable_cluster_creator_admin_permissions = true
 
   cluster_addons = {
-    coredns                = {}
-    kube-proxy             = {}
-    vpc-cni                = { configuration_values = jsonencode({ env = { ENABLE_PREFIX_DELEGATION = "true" } }) }
-    eks-pod-identity-agent = {}
+    coredns    = {}
+    kube-proxy = {}
+    # before_compute: 노드 그룹보다 먼저 설치 → 첫 노드부터 Prefix Delegation·Pod Identity 적용
+    vpc-cni = {
+      before_compute       = true
+      configuration_values = jsonencode({ env = { ENABLE_PREFIX_DELEGATION = "true" } })
+    }
+    eks-pod-identity-agent = { before_compute = true }
   }
 
   eks_managed_node_groups = {

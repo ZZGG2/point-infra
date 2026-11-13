@@ -1,3 +1,5 @@
+# ※ ADR-0014 로 Gateway API(Gateway + HTTPRoute)로 교체 예정 — 구현 단계에서 gateway.yaml 로 대체한다
+#   (프론트 web 파드 라우팅 "/" 도 그때 추가, ADR-0015)
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

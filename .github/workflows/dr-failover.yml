@@ -1,6 +1,10 @@
 # AWS 리전/사업자 장애 시 GCP Pilot Light 가동
 # 설계: docs/06-disaster-recovery/dr-runbook.md
 # AWS 리소스에 의존하는 단계가 없어야 한다 (ADR-0010)
+#
+# 실행 순서 주의: Cloud SQL 은 Private IP 전용이라 GitHub-hosted runner 에서 psql 로 접속할 수 없다.
+#  → runner 에서는 GCP API(gcloud, Terraform)만 쓰고, DB 에 SQL 을 실행하는 단계(RPO 기록, 승격, 보정)는
+#    GKE 가 생긴 뒤 클러스터 안의 일회성 Pod/Job 으로 Private IP 를 통해 실행한다.
 name: dr-failover
 on:
   workflow_dispatch:
@@ -38,26 +42,33 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
       - uses: hashicorp/setup-terraform@v3
 
-      - name: "[3] 마지막 복제 시각 기록 (실제 RPO)"
-        run: ./scripts/dr/record-rpo.sh
+      # --- runner 에서 실행: GCP API 만 사용 (DB 접속 없음) ---
+      - name: "[3] Cloud SQL 준비 (드릴: 클론 생성 / 실전: 인스턴스 확인) — gcloud API"
+        run: ./scripts/dr/promote-cloudsql.sh prepare
 
-      - name: "[4] Cloud SQL 승격 (계정 전환, 시퀀스 보정)"
-        run: ./scripts/dr/promote-cloudsql.sh
-
-      - name: "[5-6] GKE + ArgoCD 생성"
+      - name: "[4-5] GKE + ArgoCD 생성"
         working-directory: infra/terraform/envs/gcp-dr-compute
         run: |
           terraform init -input=false
           terraform apply -auto-approve -input=false
 
-      - name: "[7] monolith Ready 대기"
+      # --- GKE 안에서 실행: Private IP 로 Cloud SQL 접속 (kubectl run/Job) ---
+      - name: "[6] 마지막 복제 시각 기록 (RPO 근거) — 클러스터 내부 Pod"
+        run: ./scripts/dr/record-rpo.sh
+
+      - name: "[7] Cloud SQL 승격 (계정 전환, 시퀀스·지갑 잔액 보정) — 클러스터 내부 Job"
+        run: ./scripts/dr/promote-cloudsql.sh promote
+
+      - name: "[8] monolith Ready 대기"
         run: ./scripts/dr/wait-ready.sh
 
-      - name: "[8] DNS 전환"
+      - name: "[9] DNS 전환"
         if: ${{ !inputs.drill }}
         run: ./scripts/dr/switch-dns.sh to-gcp
 
-      - name: "[9] 스모크 테스트"
+      - name: "[10] 스모크 테스트"
+        env:
+          DR_BASE_URL: ${{ vars.DR_BASE_URL }}   # 미설정이면 스크립트가 즉시 실패한다 (잘못된 주소로 "통과" 방지)
         run: ./scripts/dr/smoke-test.sh
 
       - name: RTO 기록

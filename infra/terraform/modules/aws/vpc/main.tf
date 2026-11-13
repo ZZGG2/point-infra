@@ -19,7 +19,7 @@ module "vpc" {
   create_database_subnet_group = true
   enable_dns_hostnames         = true
 
-  public_subnet_tags  = { "kubernetes.io/role/elb" = 1 }
+  public_subnet_tags = { "kubernetes.io/role/elb" = 1 }
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = 1
     "karpenter.sh/discovery"          = var.cluster_name
