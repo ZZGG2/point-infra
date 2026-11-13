@@ -13,10 +13,10 @@
 | 재해 | 범위 | 대응 | DR 가동 |
 |---|---|---|---|
 | 단일 파드/노드 장애 | 서비스 일부 | K8s 자가 복구 | ❌ |
-| 단일 AZ 장애 | AZ | Multi-AZ (EKS 노드, Aurora, Redis, MSK) | ❌ |
-| Aurora Writer 장애 | DB | Aurora 자동 Failover (Reader 승격) | ❌ |
+| 단일 AZ 장애 | AZ | Multi-AZ (EKS 노드, RDS, Redis, MSK) | ❌ |
+| RDS Primary 장애 | DB | RDS Multi-AZ 자동 Failover (Standby 승격) | ❌ |
 | **리전 장애 / AWS 사업자 장애** | 전체 | **GCP Pilot Light 가동** | ✅ |
-| 데이터 논리 오류 (잘못된 DELETE) | 데이터 | Aurora PITR (CDC로 오류도 복제되므로 DR은 해답 아님) | ❌ |
+| 데이터 논리 오류 (잘못된 DELETE) | 데이터 | RDS PITR (CDC로 오류도 복제되므로 DR은 해답 아님) | ❌ |
 | 랜섬웨어 / 계정 탈취 | 계정 | 별도 계정 백업, 불변 백업 (확장 과제) | 상황별 |
 
 > 마지막 두 행이 중요: **복제는 백업이 아니다.** 논리 오류는 그대로 DR로 복제된다.
@@ -36,9 +36,9 @@
  └─────────────────────────┘          └───────────────────────────────────┘
 ```
 
-### 프론트엔드 (정적 호스팅)
-- point-frontend CI가 빌드 결과를 **S3와 GCS에 동시 업로드** → DR 시 컴퓨팅 없이 즉시 서비스 가능.
-- GCS 버킷 + External LB(백엔드 버킷)는 `gcp-dr-standby`에 상시 구성 (비용: 스토리지 + LB 규칙).
+### 프론트엔드 (web 파드)
+- point-frontend CI가 web 이미지를 **ECR과 Artifact Registry에 동시 푸시** → DR 시 GKE 에 monolith 와 함께 같은 이미지로 배포.
+- 경로 규칙(HTTPRoute)은 AWS·GCP 동일, GatewayClass 만 다르다 (AWS: `gateway.k8s.aws/alb`, GCP: `gke-l7-global-external-managed`).
 
 ## 4. RTO 예산 (30분 분해)
 
@@ -62,12 +62,12 @@
 
 | 이슈 | 처리 |
 |---|---|
-| 장애 시점 미복제 데이터 (≤ RPO) | Failback 시 Aurora WAL/로그와 비교해 누락분 식별·보정 |
+| 장애 시점 미복제 데이터 (≤ RPO) | Failback 시 RDS WAL/로그와 비교해 누락분 식별·보정 |
 | 시퀀스 | `scripts/dr/fix-sequences.sql` 로 `max(id) + 100000` 보정 |
 | Kafka에 있었으나 미반영된 reward | DR 중에는 처리 불가 → Failback 후 consumer 재개로 자동 반영 (멱등) |
 | Redis 당첨 기록 | 소실 가능 → Failback 후 Kafka 토픽 기준 대사 |
 
 ## 6. Failback 원칙
 - Failback은 **긴급하지 않다.** 계획된 점검 시간에 수행한다.
-- 방향을 뒤집은 CDC(Cloud SQL → Aurora) 또는 덤프/복원으로 Aurora를 최신화한 뒤 전환.
+- 방향을 뒤집은 CDC(Cloud SQL → RDS) 또는 덤프/복원으로 RDS를 최신화한 뒤 전환.
 - 상세: [dr-runbook.md §3](dr-runbook.md)

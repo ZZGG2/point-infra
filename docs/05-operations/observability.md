@@ -7,7 +7,7 @@
 | Metrics | Prometheus (kube-prometheus-stack), Micrometer | Grafana | AWS/GCP 동일 차트 → DR 환경도 같은 대시보드 |
 | Logs | Fluent Bit | CloudWatch Logs (AWS) / Cloud Logging (GCP) | JSON 구조화 로그, traceId 포함 |
 | Traces | OpenTelemetry SDK | (선택) Tempo / X-Ray | Phase 6 |
-| 관리형 지표 | CloudWatch | Grafana CloudWatch datasource | Aurora, MSK, ElastiCache |
+| 관리형 지표 | CloudWatch | Grafana CloudWatch datasource | RDS, MSK, ElastiCache |
 
 ## 2. SLO
 
@@ -23,7 +23,7 @@
 
 1. **Business** — 이벤트 참여 RPS, 당첨/낙첨/중복 비율, 지급 반영 지연
 2. **Scaling** — HPA 레플리카, Karpenter 노드 수·Pending 파드·노드 준비 시간, Spot 비율
-3. **Data** — Aurora CPU/커넥션, Redis ops/s·메모리, Kafka consumer lag
+3. **Data** — RDS CPU/커넥션, Redis ops/s·메모리, Kafka consumer lag
 4. **DR** — CDC Lag(초), Replication Slot 크기, VPN 터널 상태, Cloud SQL 쓰기량
 5. **Cost** — 일별 비용 (Cost Explorer / Kubecost)
 

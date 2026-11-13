@@ -10,7 +10,7 @@
 
 [프로젝트]
 - 모듈러 모놀리스(user/asset/point/cs) + 이벤트 전용 MSA(event-service)
-- AWS Main(EKS, Aurora PostgreSQL 16, ElastiCache, MSK) / GCP Pilot Light DR(Cloud SQL 복제, 장애 시 GKE)
+- AWS Main(EKS, RDS PostgreSQL 16, ElastiCache, MSK) / GCP Pilot Light DR(Cloud SQL 복제, 장애 시 GKE)
 - Terraform + ArgoCD(GitOps) + GitHub Actions
 - 레포: point-infra(인프라·문서), point-backend(Java 21/Spring Boot 3), point-frontend(React+Vite+TS)
 

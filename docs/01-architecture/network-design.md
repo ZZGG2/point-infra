@@ -20,7 +20,7 @@
 |---|---|---|---|---|---|
 | Public | 10.10.0.0/24 | 10.10.1.0/24 | 10.10.2.0/24 | 251 IP | ALB, NAT GW |
 | Private-App | 10.10.32.0/19 | 10.10.64.0/19 | 10.10.96.0/19 | 8,187 IP | EKS 노드/파드 (VPC CNI) |
-| Private-Data | 10.10.128.0/24 | 10.10.129.0/24 | 10.10.130.0/24 | 251 IP | Aurora, Redis, MSK |
+| Private-Data | 10.10.128.0/24 | 10.10.129.0/24 | 10.10.130.0/24 | 251 IP | RDS, Redis, MSK |
 | (예약) | 10.10.160.0/19 ~ | | | | 향후 확장 |
 
 **App 서브넷을 /19로 잡은 이유:** VPC CNI는 파드마다 VPC IP를 소비한다. 이벤트 피크에 Karpenter가 노드를 수십 대 띄우면 /24는 즉시 고갈된다. (대안: Prefix Delegation 활성화)
@@ -45,12 +45,12 @@ AWS Customer GW x2 ──(Tunnel 3, 4)┘
 
 | SG | Inbound | From |
 |---|---|---|
-| sg-alb | 443 | CloudFront Managed Prefix List |
+| sg-alb (`point-main-alb`) | 80 (도메인·ACM 후 443) | 허용 CIDR (`alb_ingress_cidrs`) |
 | sg-eks-node | 모든 포트 | sg-alb, 자기 자신 |
-| sg-aurora | 5432 | sg-eks-node, sg-msk-connect |
+| sg-rds | 5432 | sg-eks-node, sg-msk-connect |
 | sg-redis | 6379 | sg-eks-node |
-| sg-msk | 9098 (IAM) | sg-eks-node, sg-msk-connect |
-| sg-msk-connect | - (Outbound: Aurora 5432, MSK 9098, GCP 10.30.0.0/20:5432) | - |
+| sg-msk | 9094 (TLS), 9098 (IAM) | sg-eks-node, sg-msk-connect |
+| sg-msk-connect | - (Outbound: RDS 5432, MSK 9098, GCP 10.30.0.0/20:5432) | - |
 
 ## 5. GCP DR 네트워크
 
@@ -67,8 +67,8 @@ AWS Customer GW x2 ──(Tunnel 3, 4)┘
 
 | 레코드 | 유형 | Primary | Secondary |
 |---|---|---|---|
-| `api.<domain>` | A (Alias) / Failover | AWS ALB(또는 CloudFront) + Health Check | GCP Global Static IP |
-| `www.<domain>` | A (Alias) / Failover | CloudFront (S3 정적 호스팅) | GCP External LB + Cloud Storage 백엔드 버킷 (Cloud CDN) |
+| `api.<domain>` | A (Alias) / Failover | AWS Gateway ALB + Health Check | GCP Global Static IP |
+| `www.<domain>` | A (Alias) / Failover | AWS Gateway ALB → web 파드 | GCP Gateway(Static IP) → web 파드 |
 | TTL | 60s | | |
 
 - Secondary 레코드는 **평시에도 등록**해 둔다 (GCP Static IP를 미리 예약했기 때문에 가능).

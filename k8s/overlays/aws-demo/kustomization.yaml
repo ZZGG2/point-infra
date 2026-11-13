@@ -16,7 +16,7 @@ replicas:
   - { name: web, count: 1 }
 patches:
   # 레플리카 1 에서 minAvailable 1 이면 노드 교체가 막히므로 데모에서는 완화
-  - target: { kind: PodDisruptionBudget }
+  - target: { kind: PodDisruptionBudget, name: "monolith|web" }
     patch: |-
       - op: remove
         path: /spec/minAvailable

@@ -14,7 +14,8 @@
  point-frontend
  ─────────────
  PR ─▶ CI: lint·typecheck·test·build
- merge ─▶ S3 + GCS 이중 업로드 → CloudFront 무효화          (정적 호스팅, K8s 미사용)
+ merge ─▶ web 이미지 빌드(nginx) → ECR + Artifact Registry 이중 푸시
+        → point-infra 에 "태그 bump PR" 자동 생성                (web 파드, Gateway 가 / 를 라우팅)
 
  point-infra
  ───────────
@@ -30,7 +31,7 @@
 | 레포 | 파일 | 트리거 | 내용 |
 |---|---|---|---|
 | backend | `ci.yml` | PR, push main | Gradle test, ArchUnit, 이미지 빌드·스캔·이중 푸시, infra 태그 bump PR |
-| frontend | `ci.yml` | PR, push main | lint, typecheck, test, build, S3·GCS 업로드 |
+| frontend | `ci.yml` | PR, push main | lint, typecheck, test, web 이미지 빌드·이중 푸시, infra 태그 bump PR |
 | infra | `terraform-plan.yml` | PR (infra/**) | fmt, validate, tflint, checkov, plan → PR 코멘트 |
 | infra | `terraform-apply.yml` | push main (infra/**) | 환경별 apply, `environment` 승인 |
 | infra | `drift-detect.yml` | 주 1회 cron | 모든 env plan → 변경 감지 시 이슈 생성 |
@@ -51,8 +52,8 @@ k8s/argocd/
 ├── aws/          # EKS root → monolith + event-service + platform, 이벤트 시간 Sync Window
 └── gcp-dr/       # GKE root (Terraform argocd-bootstrap 이 등록) → monolith + maintenance
 ```
-- AWS: `monolith`, `event-service` 둘 다 생성
-- GCP-DR: `monolith`만 생성 + `maintenance` (이벤트 경로 503) → **선택적 복구가 Git에 선언됨**
+- AWS: `monolith`, `event-service`, `web` 생성 + Gateway(ALB)
+- GCP-DR: `monolith`, `web` 생성 + `maintenance` (이벤트 경로 503) → **선택적 복구가 Git에 선언됨**
 
 ## 5. 배포 전략
 

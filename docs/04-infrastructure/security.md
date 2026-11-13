@@ -4,12 +4,12 @@
 
 | 계층 | 통제 | 구현 |
 |---|---|---|
-| 엣지 | DDoS, 봇, Rate Limit | AWS Shield Standard, WAF Managed Rules + Bot Control, Rate-based rule |
+| 엣지 | DDoS, 봇, Rate Limit | AWS Shield Standard, 리전 WAF(ALB 연결): Managed Rules(Common, IP Reputation, Known Bad Inputs) + Rate-based rule |
 | 네트워크 | 망분리, 최소 개방 | Private Subnet, SG 최소 포트, VPC Endpoint, 클라우드 간 VPN |
 | 계정/권한 | 최소 권한, 장기 키 금지 | IAM Role + OIDC, EKS Pod Identity, GKE Workload Identity |
 | K8s | 파드 권한 최소화 | Pod Security Standards(restricted), NetworkPolicy, non-root 이미지 |
-| 데이터 | 저장 암호화 | KMS(Aurora, MSK, EBS, S3), GCP CMEK(Cloud SQL) |
-| 데이터 | 전송 암호화 | TLS 1.2+, Aurora `rds.force_ssl=1`, Cloud SQL SSL 필수 |
+| 데이터 | 저장 암호화 | KMS(RDS, MSK, ElastiCache, EBS, ECR), GCP CMEK(Cloud SQL) |
+| 데이터 | 전송 암호화 | TLS 1.2+, RDS `rds.force_ssl=1`, MSK·ElastiCache 전송 암호화, Cloud SQL SSL 필수 |
 | 데이터 | 개인정보 | 이름·연락처 컬럼 애플리케이션 레벨 암호화, 로그 마스킹 |
 | 시크릿 | 코드/이미지에 시크릿 금지 | Secrets Manager / Secret Manager + External Secrets Operator |
 | 공급망 | 이미지 취약점 | Trivy(CI, Critical 시 실패), ECR 스캔 |
@@ -30,14 +30,14 @@
 
 | 계정 | 위치 | 권한 |
 |---|---|---|
-| `app_rw` | Aurora | 앱 스키마 DML |
-| `debezium` | Aurora | REPLICATION, 대상 테이블 SELECT |
+| `app_rw` | RDS | 앱 스키마 DML |
+| `debezium` | RDS | REPLICATION, 대상 테이블 SELECT |
 | `sink_writer` | Cloud SQL | 평시 유일한 쓰기 계정 |
 | `app_rw` | Cloud SQL | **평시 NOLOGIN → Failover 시 LOGIN 전환** |
 
 ## 4. 보안 점검 체크리스트
 - [ ] 퍼블릭 S3 버킷 0개
-- [ ] 0.0.0.0/0 Inbound SG는 ALB 443만 (CloudFront prefix list로 제한 시 0개)
+- [ ] 0.0.0.0/0 Inbound SG는 ALB 443만 (도메인·ACM 전에는 ALB 80 을 허용 CIDR 로만 개방)
 - [ ] IAM Access Key 0개 (CI 포함)
 - [ ] checkov High 이상 0건 또는 예외 사유 문서화
 - [ ] 컨테이너 root 실행 0개

@@ -1,13 +1,13 @@
-# CDC (AWS Aurora → GCP Cloud SQL)
+# CDC (AWS RDS PostgreSQL → GCP Cloud SQL)
 
 ```
-Aurora ──pgoutput──▶ Debezium Source ──▶ MSK (cdc.*) ──▶ Debezium JDBC Sink ──HA VPN──▶ Cloud SQL
+RDS ──pgoutput──▶ Debezium Source ──▶ MSK (cdc.*) ──▶ Debezium JDBC Sink ──HA VPN──▶ Cloud SQL
 ```
 
 | 파일 | 설명 |
 |---|---|
-| `publication.sql` | Aurora 복제 계정 / Publication (복제 대상 테이블만) |
-| `debezium-source-aurora.json` | Source 커넥터 (heartbeat 로 RPO 측정) |
+| `publication.sql` | RDS 복제 계정 / Publication (복제 대상 테이블만) |
+| `debezium-source-rds.json` | Source 커넥터 (heartbeat 로 RPO 측정) |
 | `jdbc-sink-cloudsql.json` | Sink 커넥터 (upsert, delete 반영) |
 
 - 배포: MSK Connect 커스텀 플러그인 + 커넥터 (`infra/terraform/modules/aws/msk`)

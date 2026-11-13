@@ -9,7 +9,7 @@
 |---|---|---|---|
 | `point-infra` | 인프라 담당 | 인프라 담당 1명 + (DR/네트워크 변경 시) 2명 | Terraform apply, ArgoCD |
 | `point-backend` | 백엔드 담당 | 백엔드 1명 (`api/`, `db/migration` 변경 시 + 인프라 1명) | 이미지 → infra 태그 PR |
-| `point-frontend` | 프론트 담당 | 프론트 1명 | S3 + GCS |
+| `point-frontend` | 프론트 담당 | 프론트 1명 | web 이미지 (ECR + Artifact Registry) |
 
 - 팀원 GitHub ID와 역할은 각 레포 `.github/CODEOWNERS`에 등록한다.
 - 설계 문서·ADR·팀 규칙의 **원본은 point-infra**에만 둔다. 다른 레포는 링크로 참조.
@@ -60,7 +60,7 @@
 
 Refs: #42
 ```
-| scope 예시 | backend: `user` `point` `event` `common` `api` · frontend: `auth` `point` `event` `ui` · infra: `vpc` `eks` `aurora` `cdc` `dr` `k8s` `docs` |
+| scope 예시 | backend: `user` `point` `event` `common` `api` · frontend: `auth` `point` `event` `ui` · infra: `vpc` `eks` `rds` `cdc` `dr` `k8s` `docs` |
 |---|---|
 
 - 하나의 커밋 = 하나의 논리 변경. "WIP", "수정", "asdf" 금지 (Squash 전 정리 대상이라도 리뷰 가독성을 위해).

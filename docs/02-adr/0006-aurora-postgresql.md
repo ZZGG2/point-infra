@@ -1,5 +1,5 @@
 # ADR-0006: Aurora PostgreSQL 채택
-- 상태: Accepted · 날짜: 2026-11-05
+- 상태: Superseded by ADR-0013 (Main DB) · 날짜: 2026-11-05
 
 ## 결정
 Main DB는 **Aurora PostgreSQL**, DR DB는 **Cloud SQL for PostgreSQL**.

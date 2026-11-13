@@ -8,7 +8,7 @@
 |---|---|---|---|
 | monolith 컴퓨팅 | On-Demand 고정 (소형 2대) | 동일 | GKE 소형 노드풀 |
 | event 컴퓨팅 | 0~1 노드 | Karpenter Spot 확장 | **0 (배포 안 함)** |
-| DB | Aurora | 동일 | Cloud SQL (이미 존재) |
+| DB | RDS PostgreSQL | 동일 | Cloud SQL (이미 존재) |
 | DR 상시 비용 | Cloud SQL + VPN + Static IP | 동일 | + GKE |
 
 ## 2. DR 전략별 비용 비교 (산정 틀)

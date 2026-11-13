@@ -26,12 +26,13 @@
                           │ Primary                                                Secondary   │
                           ▼                                                                    ▼
   ┌──────────────── AWS ap-northeast-2 (Main, 100%) ────────────────┐   ┌──────── GCP asia-northeast3 (DR) ────────┐
-  │ CloudFront + WAF → ALB(Ingress)                                  │   │ [상시] VPC, Cloud SQL(복제 대상),          │
+  │ WAF → ALB (Gateway API)                                          │   │ [상시] VPC, Cloud SQL(복제 대상),          │
   │   ├─ /api/**         → Monolith (user/asset/point/cs)  On-Demand │   │        Static IP, Secret Manager,          │
-  │   └─ /api/events/**  → event-service (MSA)       Karpenter Spot  │   │        Artifact Registry                    │
-  │                         │ Redis(대기열/중복방지)                    │   │ [장애 시 생성] GKE + ArgoCD               │
-  │                         └─ Kafka(MSK) ──▶ Monolith point 모듈     │   │        → Monolith만 배포                   │
-  │ Aurora PostgreSQL ──(Debezium CDC / MSK Connect)──── HA VPN ─────┼──▶│        → /api/events/** = 점검 페이지       │
+  │   ├─ /api/events/**  → event-service (MSA)       Karpenter Spot  │   │        Artifact Registry                    │
+  │   └─ /**             → web (SPA)                                 │   │ [장애 시 생성] GKE + ArgoCD               │
+  │                         │ Redis(대기열/중복방지)                    │   │        → Monolith + web 배포               │
+  │                         └─ Kafka(MSK) ──▶ Monolith point 모듈     │   │        → /api/events/** = 점검 페이지       │
+  │ RDS PostgreSQL ──(Debezium CDC / MSK Connect)──── HA VPN ────────┼──▶│                                            │
   └──────────────────────────────────────────────────────────────────┘   └────────────────────────────────────────────┘
 ```
 

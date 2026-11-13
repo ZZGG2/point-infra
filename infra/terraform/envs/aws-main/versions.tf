@@ -20,6 +20,14 @@ provider "aws" {
   default_tags { tags = local.tags }
 }
 
+# 이전 구성(CloudFront WAF, us-east-1)의 리소스를 state 에서 삭제하기 위해 남겨 둔다.
+# TODO(#cleanup): edge 리소스 삭제 apply 이후 제거
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+  default_tags { tags = local.tags }
+}
+
 provider "helm" {
   kubernetes {
     host                   = module.eks.cluster_endpoint

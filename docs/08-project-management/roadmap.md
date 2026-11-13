@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 0. 설계 | 1주 | 아키텍처·ADR·CIDR 확정 | 본 docs 리뷰 완료, CIDR 변경 없음 선언 |
 | 1. 앱 MVP | 2주 | monolith + event-service 로컬 동작 | docker compose에서 S3/S4 시나리오 통과 |
-| 2. AWS 기반 | 1.5주 | VPC, EKS, Aurora, Redis, MSK Terraform | `terraform apply` 1회로 재현 |
+| 2. AWS 기반 | 1.5주 | VPC, EKS, RDS, Redis, MSK Terraform | `terraform apply` 1회로 재현 |
 | 3. 플랫폼 | 1.5주 | ArgoCD, Karpenter, KEDA, ESO, 모니터링, CI/CD | main 머지 → 자동 배포, S2 부하 테스트 통과 |
 | 4. DR 기반 | 1.5주 | GCP standby, HA VPN, CDC | CDC Lag 대시보드, p99 ≤ 5초 |
 | 5. DR 자동화 | 1.5주 | gcp-dr-compute, dr-failover 워크플로 | 전체 훈련 1회, RTO ≤ 30분 |
@@ -31,7 +31,7 @@
 
 ### Phase 2 — AWS 인프라
 - [ ] bootstrap (S3 state)
-- [ ] modules/aws/vpc, eks, aurora, elasticache, msk, ecr
+- [ ] modules/aws/vpc, eks, rds, elasticache, msk, ecr
 - [ ] envs/aws-main 조립
 - [ ] GitHub OIDC Role
 
@@ -41,13 +41,13 @@
 - [ ] KEDA (Cron, Kafka lag)
 - [ ] External Secrets, kube-prometheus-stack, Fluent Bit
 - [ ] point-backend ci.yml (이미지 푸시 → 태그 bump PR), point-frontend ci.yml, terraform-plan/apply.yml
-- [ ] edge: Route 53, CloudFront, WAF, ACM
+- [ ] Gateway API(ALB) + WAF, Route 53 + ACM
 
 ### Phase 4 — DR 기반
 - [ ] bootstrap/gcp (GCS state), Workload Identity Federation
 - [ ] envs/gcp-dr-standby (VPC, PSA, Cloud SQL, Static IP, AR, Secret Manager)
 - [ ] shared/vpn (HA VPN ↔ AWS VPN, BGP)
-- [ ] Aurora 논리 복제 파라미터, Publication
+- [ ] RDS 논리 복제 파라미터, Publication
 - [ ] MSK Connect: Debezium source + JDBC sink
 - [ ] heartbeat 기반 Lag 대시보드
 - [ ] CI 이미지 이중 푸시

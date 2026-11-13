@@ -37,7 +37,7 @@
 ## 4. 범위
 
 ### In Scope
-- AWS Main 환경 전체 (VPC, EKS, Aurora, ElastiCache, MSK, Route 53 등)
+- AWS Main 환경 전체 (VPC, EKS, RDS PostgreSQL, ElastiCache, MSK, Route 53 등)
 - GCP DR Pilot Light (Cloud SQL 상시 복제 + GKE 온디맨드 생성)
 - Terraform 모듈, GitHub Actions CI/CD, ArgoCD GitOps
 - 관측성(Prometheus/Grafana, CloudWatch), 부하 테스트(k6), DR 훈련

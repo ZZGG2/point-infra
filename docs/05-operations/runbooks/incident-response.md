@@ -14,7 +14,7 @@
 알람 수신
  ├─ 단일 AZ 문제? → Multi-AZ 자동 복구 대기 + 관찰
  ├─ 특정 서비스 문제? → 최근 배포 확인 → ArgoCD Rollback
- ├─ 데이터 계층 문제? → Aurora Failover 상태 / Redis / MSK 확인
+ ├─ 데이터 계층 문제? → RDS Failover 상태 / Redis / MSK 확인
  └─ 리전/사업자 수준 문제?
       ├─ AWS Health Dashboard 확인
       ├─ 15분 이상 지속 예상 또는 복구 시점 불명

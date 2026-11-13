@@ -38,7 +38,7 @@
 | # | 단계 | 비고 |
 |---|---|---|
 | 1 | AWS 정상화 확인, `aws-main` plan 무변경 확인 | |
-| 2 | Aurora를 Cloud SQL 최신 상태로 동기화 | 방법 A: 역방향 CDC (Cloud SQL → Aurora) / 방법 B: 점검 중 덤프·복원 |
+| 2 | RDS를 Cloud SQL 최신 상태로 동기화 | 방법 A: 역방향 CDC (Cloud SQL → RDS) / 방법 B: 점검 중 덤프·복원 |
 | 3 | 점검 시작 — GCP 쓰기 중단 (maintenance 모드) | 쓰기 동결 |
 | 4 | 최종 동기화 + 행 수/체크섬 검증 | |
 | 5 | DNS를 AWS로 전환 | |

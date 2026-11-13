@@ -48,4 +48,4 @@ COMMIT;
 |---|---|---|
 | Redis 당첨자 Set ↔ ledger(source=EVENT, reference_id=eventId) | 이벤트 종료 후 | 누락분 재발행 |
 | Σ ledger.amount ↔ wallet.balance (사용자별) | 일 1회 | 알람 + 수동 조사 |
-| Aurora ↔ Cloud SQL 행 수/체크섬 (CDC 대상 테이블) | 일 1회 | 복제 재동기화 |
+| RDS ↔ Cloud SQL 행 수/체크섬 (CDC 대상 테이블) | 일 1회 | 복제 재동기화 |

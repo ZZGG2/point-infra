@@ -16,7 +16,7 @@
 |---|---|
 | Route 53 Health Check 대상 경로를 실패시키기 (Inverted) | 트래픽 관점 리전 장애 |
 | EKS 노드그룹 0 + ALB 리스너 삭제 | 컴퓨팅 장애 |
-| AWS FIS로 Aurora Failover / 네트워크 차단 | 부분 장애 |
+| AWS FIS로 RDS Multi-AZ Failover / 네트워크 차단 | 부분 장애 |
 | AWS 측 VPN 연결 비활성화 | 복제 경로 단절 → RPO 측정 |
 
 ## 3. 측정 항목 & 결과 기록

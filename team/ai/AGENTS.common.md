@@ -14,7 +14,7 @@
 
 - **서비스:** 금융 포인트 플랫폼 — 마이데이터 자산조회(평시 트래픽) + 출석/퀴즈 포인트 이벤트(주 1~2회 폭주)
 - **구조:** 모듈러 모놀리스(user/asset/point/cs) + 이벤트 전용 MSA(event-service)
-- **인프라:** AWS Main(EKS, Aurora PostgreSQL, ElastiCache, MSK) / GCP Pilot Light DR(Cloud SQL 상시 복제, GKE 장애 시 생성)
+- **인프라:** AWS Main(EKS, RDS PostgreSQL, ElastiCache, MSK) / GCP Pilot Light DR(Cloud SQL 상시 복제, GKE 장애 시 생성)
 - **자동화:** Terraform(인프라) + ArgoCD(배포, GitOps) + GitHub Actions(CI)
 - **목표 수치:** RTO ≤ 30분, RPO ≤ 5초 (near-zero, **"RPO 0"이라고 쓰지 않는다**)
 - **레포:**
@@ -32,9 +32,10 @@
 |---|---|---|
 | 아키텍처 | event 도메인만 MSA, 나머지는 monolith | ADR-0001 |
 | 확장 | EKS + Karpenter + KEDA (Lambda, ECS, ASG 도입 금지) | ADR-0002 |
+| 트래픽 진입 | Gateway API (AWS: ALB / GCP: GKE Gateway), 프론트는 web 파드 | ADR-0014, 0015 |
 | DR | GCP Pilot Light, DR 시 monolith만 복구 | ADR-0003, 0004 |
 | 복제 | Debezium CDC (비동기) | ADR-0005 |
-| DB | PostgreSQL 16 (Aurora / Cloud SQL) | ADR-0006 |
+| DB | PostgreSQL 16 (RDS / Cloud SQL) | ADR-0006, 0013 |
 | 이벤트 판정 | Redis Lua 원자 처리 (DB 락 사용 금지) | ADR-0007 |
 | 원장 반영 | Kafka 비동기 + 멱등키 | ADR-0008 |
 | 역할 분리 | Terraform = 클라우드 + ArgoCD 설치까지 / 나머지 K8s = ArgoCD | ADR-0009 |

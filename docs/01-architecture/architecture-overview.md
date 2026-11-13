@@ -17,17 +17,16 @@
 Route 53 ── Failover Record (Primary: AWS ALB / Secondary: GCP Static IP)
    │
    ├────────────────────────── AWS ap-northeast-2 (Main) ─────────────────────────────┐
-   │  CloudFront + AWS WAF (Bot 차단, Rate Limit)                                       │
-   │      │                                                                           │
-   │  ALB (AWS Load Balancer Controller / Ingress)                                    │
-   │      ├─ /api/events/**  → event-service  (ns: event,    Karpenter NodePool: spot) │
-   │      └─ /api/**         → monolith       (ns: core,     Managed NodeGroup: OD)    │
+   │  ALB + AWS WAF (Bot 차단, Rate Limit)  ← Gateway API (AWS Load Balancer Controller)│
+   │      ├─ /api/events/**  → event-service  (Karpenter NodePool: spot)              │
+   │      ├─ /api/**         → monolith       (Managed NodeGroup: On-Demand)          │
+   │      └─ /**             → web (SPA 정적, nginx)                                   │
    │                                                                                  │
-   │  event-service ──▶ ElastiCache Redis (대기열 ZSET, 중복방지 SETNX, 재고 카운터)     │
+   │  event-service ──▶ ElastiCache Valkey (대기열, 중복방지, 재고 카운터)                │
    │        └────────▶ MSK topic: point.reward.requested                              │
-   │                         └──▶ monolith(point 모듈) consumer ──▶ Aurora PostgreSQL │
+   │                         └──▶ monolith(point 모듈) consumer ──▶ RDS PostgreSQL    │
    │                                                                                  │
-   │  Aurora PostgreSQL ──▶ Debezium Source (MSK Connect) ──▶ MSK topic: cdc.*         │
+   │  RDS PostgreSQL ──▶ Debezium Source (MSK Connect) ──▶ MSK topic: cdc.*            │
    │                                     └──▶ JDBC Sink (MSK Connect) ──┐             │
    └──────────────────────────────────────────────────────────────────┼─────────────┘
                                                         HA VPN (IPsec, BGP)
@@ -45,13 +44,14 @@ Route 53 ── Failover Record (Primary: AWS ALB / Secondary: GCP Static IP)
 
 | 컴포넌트 | 책임 | 비고 |
 |---|---|---|
-| CloudFront + WAF | 정적 리소스 캐시, 매크로/봇 차단, IP Rate Limit | 이벤트 1차 방어선 |
-| ALB | 경로 기반 라우팅, TLS 종료 | Ingress로 관리 |
+| WAF (리전, ALB 연결) | 매크로/봇 차단, IP Rate Limit | 이벤트 1차 방어선. Terraform 이 Gateway ALB 에 연결 |
+| ALB | 경로 기반 라우팅, TLS 종료(도메인·ACM 후) | Gateway API(Gateway, HTTPRoute)로 관리 |
+| web | 프론트엔드 SPA 정적 서빙 (nginx, non-root) | DR 시 같은 이미지를 GKE 에 배포 |
 | monolith | user / asset / point / cs 도메인 | 모듈 간 의존은 인터페이스로만 (향후 분리 대비) |
 | event-service | 이벤트 참여, 대기열, 선착순 판정 | Stateless, Redis에 상태 위임 |
 | Redis | 대기열, 중복 참여 방지, 선착순 카운터 | 원자 연산(Lua) |
 | MSK | 이벤트 결과 비동기 전달, CDC 파이프라인 | 원장 반영 지연 허용 (최종 일관성) |
-| Aurora | 원장(Source of Truth) | 논리 복제 활성화 |
+| RDS PostgreSQL | 원장(Source of Truth) | Multi-AZ, 논리 복제 활성화 |
 | Debezium / JDBC Sink | AWS → GCP 실시간 복제 | 복제 Lag = RPO |
 | Cloud SQL | DR 시 Primary DB로 승격 | 평시 쓰기 금지 (sink 전용 계정만) |
 | Karpenter | 이벤트용 노드 프로비저닝 | Spot 우선, 다양한 인스턴스 타입 |
@@ -61,7 +61,7 @@ Route 53 ── Failover Record (Primary: AWS ALB / Secondary: GCP Static IP)
 ## 4. 요청 흐름
 
 ### 4.1 평시 — 포인트 잔액 조회
-`Client → CloudFront → ALB → monolith(point) → Aurora → 응답`
+`Client → (WAF) ALB → monolith(point) → RDS → 응답` (화면은 `Client → ALB → web`)
 
 ### 4.2 이벤트 — 퀴즈 정답 포인트 지급
 1. `POST /api/events/{id}/answers` → event-service
