@@ -29,7 +29,7 @@
  │ VPC / Subnet       ●    │          │ VPC / Subnet                ●     │
  │ HA VPN             ●    │          │ HA VPN (AWS 측 Down)        ○     │
  │ Cloud SQL (sink)   ●    │   ──▶    │ Cloud SQL (Primary 승격)    ●     │
- │ Static IP          ●    │          │ Static IP → GKE Ingress     ●     │
+ │ Static IP          ●    │          │ Static IP → GKE Gateway     ●     │
  │ Artifact Registry  ●    │          │ GKE + ArgoCD                ●     │
  │ Secret Manager     ●    │          │ monolith (2~3 replicas)     ●     │
  │ GKE                ✕    │          │ event-service               ✕     │

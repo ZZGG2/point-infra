@@ -214,7 +214,7 @@ module "argocd" {
 # ---------------------------------------------------------------- ALB(Gateway 가 생성) 대기 → WAF 연결
 resource "terraform_data" "wait_alb" {
   depends_on       = [module.argocd]
-  triggers_replace = ["gateway-api"] # Ingress → Gateway 전환으로 ALB 가 재생성됨
+  triggers_replace = ["gateway-api"] # 값을 바꾸면 ALB 대기·WAF 연결을 다시 수행
 
   provisioner "local-exec" {
     interpreter = ["pwsh", "-NoProfile", "-NonInteractive", "-Command"]

@@ -23,7 +23,7 @@ variable "app_subnets" {
   type        = list(string)
 }
 variable "data_subnets" {
-  description = "Private-Data 서브넷 CIDR (Aurora, Redis, MSK)"
+  description = "Private-Data 서브넷 CIDR (RDS, Redis, MSK)"
   type        = list(string)
 }
 variable "single_nat_gateway" {

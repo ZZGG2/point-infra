@@ -11,7 +11,7 @@ locals {
     retry = { limit = 20, backoff = { duration = "30s", factor = 2, maxDuration = "5m" } }
   }
   in_cluster = "https://kubernetes.default.svc"
-  # 삭제 시 하위 리소스까지 정리 (Ingress → ALB, NodePool → Karpenter 노드)
+  # 삭제 시 하위 리소스까지 정리 (Gateway → ALB, NodePool → Karpenter 노드)
   cascade = ["resources-finalizer.argocd.argoproj.io"]
 
   git = { repoURL = var.git_repo_url, targetRevision = var.git_revision }

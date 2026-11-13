@@ -1,4 +1,4 @@
-# RDS for PostgreSQL 16 Multi-AZ (ADR-0013: Aurora 대신 — 비용·단순성, 설계 동일)
+# RDS for PostgreSQL 16 Multi-AZ (ADR-0006 엔진, ADR-0013)
 # Debezium CDC 를 위해 논리 복제 활성화 (ADR-0005), 전송 암호화 강제
 resource "aws_db_parameter_group" "this" {
   name   = "${var.name}-pg16"

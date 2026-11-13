@@ -10,13 +10,14 @@ infra/terraform/
 ├── modules/
 │   ├── aws/
 │   │   ├── vpc/          # 3-tier subnet, NAT, VPC Endpoints
-│   │   ├── eks/          # 클러스터, Managed NodeGroup, Pod Identity, 애드온
+│   │   ├── eks/          # 클러스터, Managed NodeGroup(AL2023), Pod Identity, 애드온
 │   │   ├── karpenter/    # IAM, SQS(Interruption), Helm
-│   │   ├── aurora/       # 파라미터 그룹(logical replication), KMS
+│   │   ├── rds/          # PostgreSQL 16, 파라미터 그룹(logical replication, force_ssl), KMS
 │   │   ├── elasticache/
 │   │   ├── msk/          # 클러스터 + MSK Connect(Debezium)
-│   │   ├── ecr/
-│   │   └── edge/         # Route 53, CloudFront, WAF, ACM
+│   │   ├── ecr/          # monolith, event-service, web
+│   │   ├── waf/          # 리전 WAF + Gateway ALB 연결
+│   │   └── argocd-bootstrap/  # ArgoCD + Application 등록 (LB Controller·External Secrets·KEDA·앱)
 │   ├── gcp/
 │   │   ├── network/      # VPC, subnet, PSA, Static IP
 │   │   ├── cloudsql/

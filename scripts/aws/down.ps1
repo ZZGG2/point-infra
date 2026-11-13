@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  AWS Main 전체 삭제. Terraform 밖에서 생긴 리소스(Ingress → ALB, Karpenter → EC2)를 먼저 정리한 뒤 destroy.
+  AWS Main 전체 삭제. Terraform 밖에서 생긴 리소스(Gateway → ALB, Karpenter → EC2)를 먼저 정리한 뒤 destroy.
   (순서를 지키지 않으면 ALB/ENI 가 남아 VPC 삭제가 실패한다)
 #>
 param([switch]$AutoApprove)
@@ -24,7 +24,7 @@ aws eks describe-cluster --region $region --name $cluster *> $null
 if ($LASTEXITCODE -eq 0) {
   aws eks update-kubeconfig --region $region --name $cluster | Out-Null
 
-  Write-Host '==> ArgoCD 앱 삭제 (finalizer 로 Ingress·NodePool 까지 정리)'
+  Write-Host '==> ArgoCD 앱 삭제 (finalizer 로 Gateway(ALB)·NodePool 까지 정리)'
   kubectl -n argocd delete application apps-aws platform-karpenter --ignore-not-found --wait=true --timeout=10m
 
   Wait-Until { aws elbv2 describe-load-balancers --region $region --names $albName *> $null; $LASTEXITCODE -ne 0 } 'ALB 삭제'

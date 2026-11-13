@@ -77,7 +77,7 @@ variable "msk_broker_count" {
 }
 
 variable "alb_wait_minutes" {
-  description = "ArgoCD 가 Ingress 를 동기화해 ALB 가 생길 때까지 기다리는 최대 시간"
+  description = "ArgoCD 가 Gateway 를 동기화해 ALB 가 생길 때까지 기다리는 최대 시간"
   type        = number
   default     = 25
 }
