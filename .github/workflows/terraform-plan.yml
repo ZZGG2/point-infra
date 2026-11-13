@@ -17,7 +17,7 @@ jobs:
       run: { working-directory: "infra/terraform/envs/${{ matrix.env }}" }
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
       - run: terraform fmt -check -recursive ../..
       - name: tflint
         uses: terraform-linters/setup-tflint@v4
