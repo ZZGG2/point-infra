@@ -31,7 +31,7 @@ jobs:
       - name: 시작 시각 기록
         run: echo "START=$(date +%s)" >> $GITHUB_ENV
 
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_DR_SA }}
