@@ -31,16 +31,16 @@ jobs:
     env:
       DRILL: ${{ inputs.drill }}   # true 면 실 Cloud SQL 대신 클론 인스턴스를 승격 (복제 유지)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 시작 시각 기록
         run: echo "START=$(date +%s)" >> $GITHUB_ENV
 
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_DR_SA }}
-      - uses: google-github-actions/setup-gcloud@v2
-      - uses: hashicorp/setup-terraform@v3
+      - uses: google-github-actions/setup-gcloud@v3
+      - uses: hashicorp/setup-terraform@v4
 
       # --- runner 에서 실행: GCP API 만 사용 (DB 접속 없음) ---
       - name: "[3] Cloud SQL 준비 (드릴: 클론 생성 / 실전: 인스턴스 확인) — gcloud API"
