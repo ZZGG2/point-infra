@@ -20,7 +20,7 @@
 |---|---|---|---|---|---|
 | Public | 10.10.0.0/24 | 10.10.1.0/24 | 10.10.2.0/24 | 251 IP | ALB, NAT GW |
 | Private-App | 10.10.32.0/19 | 10.10.64.0/19 | 10.10.96.0/19 | 8,187 IP | EKS 노드/파드 (VPC CNI) |
-| Private-Data | 10.10.128.0/24 | 10.10.129.0/24 | 10.10.130.0/24 | 251 IP | RDS, Redis, MSK |
+| Private-Data | 10.10.128.0/24 | 10.10.129.0/24 | 10.10.130.0/24 | 251 IP | RDS, Redis |
 | (예약) | 10.10.160.0/19 ~ | | | | 향후 확장 |
 
 **App 서브넷을 /19로 잡은 이유:** VPC CNI는 파드마다 VPC IP를 소비한다. 이벤트 피크에 Karpenter가 노드를 수십 대 띄우면 /24는 즉시 고갈된다. (대안: Prefix Delegation 활성화)
@@ -31,7 +31,7 @@
 |---|---|---|
 | Private → 인터넷 | NAT Gateway | 데모: 1개 (비용), 운영 권장: AZ별 1개 |
 | Private → AWS 서비스 | VPC Endpoint (S3 GW, ECR api/dkr, STS, Secrets Manager, CloudWatch Logs) | NAT 데이터 처리 비용 절감 + 망분리 |
-| AWS ↔ GCP | AWS Site-to-Site VPN ↔ GCP HA VPN (터널 2개 이상, BGP) | CDC 복제 트래픽 전용 |
+| AWS ↔ GCP | AWS Site-to-Site VPN ↔ GCP HA VPN (터널 2개 이상, BGP) | DR 복제 트래픽 전용 (Cloud SQL → RDS 5432 접속, ADR-0020) |
 
 ### HA VPN 구성
 ```
@@ -40,6 +40,7 @@ AWS VGW / TGW ──(Tunnel 1, 2)──┐
 AWS Customer GW x2 ──(Tunnel 3, 4)┘
 ```
 - GCP는 Cloud SQL Private IP 대역(`10.30.0.0/20`)을 Cloud Router 커스텀 광고로 AWS에 전달해야 한다. (Private Service Access 피어링 대역은 기본 광고되지 않음 → 커스텀 경로 광고 + 피어링 export 설정 필요)
+- 반대로 Cloud SQL 이 RDS(Private-Data `10.10.128.0/22` 대역)에 접속하므로, VPN 으로 받은 AWS 경로가 PSA 피어링을 통해 Cloud SQL 쪽에 보여야 한다 (피어링 custom route export). 구독자가 원천에 접속하는 방향이다 (ADR-0020).
 
 ## 4. 보안 그룹 (AWS)
 
@@ -47,10 +48,8 @@ AWS Customer GW x2 ──(Tunnel 3, 4)┘
 |---|---|---|
 | sg-alb (`point-main-alb`) | 80 (도메인·ACM 후 443) | 허용 CIDR (`alb_ingress_cidrs`) |
 | sg-eks-node | 모든 포트 | sg-alb, 자기 자신 |
-| sg-rds | 5432 | sg-eks-node, sg-msk-connect |
+| sg-rds | 5432 | sg-eks-node, GCP Cloud SQL 대역 `10.30.0.0/20` (논리 복제 구독, ADR-0020) |
 | sg-redis | 6379 | sg-eks-node |
-| sg-msk | 9094 (TLS), 9098 (IAM) | sg-eks-node, sg-msk-connect |
-| sg-msk-connect | - (Outbound: RDS 5432, MSK 9098, GCP 10.30.0.0/20:5432) | - |
 
 ## 5. GCP DR 네트워크
 

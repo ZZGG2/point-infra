@@ -7,10 +7,10 @@
 | Phase | 기간 | 목표 | 완료 조건 (Definition of Done) |
 |---|---|---|---|
 | 0. 설계 | 1주 | 아키텍처·ADR·CIDR 확정 | 본 docs 리뷰 완료, CIDR 변경 없음 선언 |
-| 1. 앱 MVP | 2주 | monolith + event-service 로컬 동작 | docker compose에서 S3/S4 시나리오 통과 |
-| 2. AWS 기반 | 1.5주 | VPC, EKS, RDS, Redis, MSK Terraform | `terraform apply` 1회로 재현 |
+| 1. 앱 MVP | 2주 | core-service + event-service 로컬 동작 | docker compose에서 S3/S4 시나리오 통과 |
+| 2. AWS 기반 | 1.5주 | VPC, EKS, RDS, Redis Terraform | `terraform apply` 1회로 재현 |
 | 3. 플랫폼 | 1.5주 | ArgoCD, Karpenter, KEDA, ESO, 모니터링, CI/CD | main 머지 → 자동 배포, S2 부하 테스트 통과 |
-| 4. DR 기반 | 1.5주 | GCP standby, HA VPN, CDC | CDC Lag 대시보드, p99 ≤ 5초 |
+| 4. DR 기반 | 1.5주 | GCP standby, HA VPN, 논리 복제 | 복제 Lag 대시보드, p99 ≤ 5초 |
 | 5. DR 자동화 | 1.5주 | gcp-dr-compute, dr-failover 워크플로 | 전체 훈련 1회, RTO ≤ 30분 |
 | 6. 마무리 | 1주 | 비교 실험, 비용 분석, 문서·블로그 | README 결과 수치 채움, 회고 |
 
@@ -23,22 +23,30 @@
 - [ ] AWS/GCP 계정, 예산 알림 설정
 
 ### Phase 1 — 애플리케이션
-- [ ] monolith: user(JWT), point(원장·멱등), asset(Mock), cs
-- [ ] event-service: 출석(Bitmap), 퀴즈(Lua), 대기열(ZSET), Kafka 발행
-- [ ] point consumer + DLQ
-- [ ] Flyway 스키마, Testcontainers 통합 테스트, ArchUnit
-- [ ] Dockerfile (multi-stage, non-root)
+> 현황 상세: [implementation-status](../00-overview/implementation-status.md)
+
+- [x] core-service: user(JWT + refresh token), point(원장·멱등·사용)
+- [ ] core-service: asset(Mock), cs, 포인트 환불·내역 페이지네이션
+- [x] event-service: 출석(Bitmap), 퀴즈(Lua), Kafka 발행
+- [ ] event-service: 대기열(ZSET), 운영용 이벤트 생성·조회 API
+- [x] point consumer + DLQ
+- [x] 원장 반영 Kafka → Redis Stream 전환: Lua `XADD`, Stream consumer(PEL·DLQ·보존), Kafka 의존성 제거 (ADR-0019, point-backend)
+- [x] ~~퀴즈 일괄 정산 (ADR-0017)~~ → 즉시 지급으로 복귀 (ADR-0018)
+- [ ] 퀴즈 대사 배치 (Redis 당첨자 ↔ 원장), Stream pending 알람 (ADR-0018 후속)
+- [x] Flyway 스키마, Testcontainers 통합 테스트, ArchUnit
+- [x] Dockerfile (multi-stage, non-root)
 
 ### Phase 2 — AWS 인프라
-- [ ] bootstrap (S3 state)
-- [ ] modules/aws/vpc, eks, rds, elasticache, msk, ecr
+- [x] bootstrap (S3 state)
+- [x] modules/aws/vpc, eks (작성 — apply 전)
+- [ ] modules/aws/rds (현재 ADR-0006 기준 DB 스캐폴딩 → ADR-0013 교체, #8), elasticache(Multi-AZ, ADR-0019), ecr, karpenter, waf (스텁)
 - [ ] envs/aws-main 조립
 - [ ] GitHub OIDC Role
 
 ### Phase 3 — 플랫폼 & CI/CD
 - [ ] ArgoCD 설치, App of Apps
 - [ ] Karpenter NodePool (core: OD / event: Spot)
-- [ ] KEDA (Cron, Kafka lag)
+- [ ] KEDA (Cron, Redis Stream pending)
 - [ ] External Secrets, kube-prometheus-stack, Fluent Bit
 - [ ] point-backend ci.yml (이미지 푸시 → 태그 bump PR), point-frontend ci.yml, terraform-plan/apply.yml
 - [ ] Gateway API(ALB) + WAF, Route 53 + ACM
@@ -47,8 +55,8 @@
 - [ ] bootstrap/gcp (GCS state), Workload Identity Federation
 - [ ] envs/gcp-dr-standby (VPC, PSA, Cloud SQL, Static IP, AR, Secret Manager)
 - [ ] shared/vpn (HA VPN ↔ AWS VPN, BGP)
-- [ ] RDS 논리 복제 파라미터, Publication
-- [ ] MSK Connect: Debezium source + JDBC sink
+- [ ] RDS 논리 복제 파라미터(`rds.logical_replication`, pg_cron, `max_slot_wal_keep_size`), Publication (`cdc/publication.sql`)
+- [ ] sg-rds 에 Cloud SQL 대역 5432 인바운드, PSA custom route export, Cloud SQL Subscription (`cdc/subscription.sql`) (ADR-0020)
 - [ ] heartbeat 기반 Lag 대시보드
 - [ ] CI 이미지 이중 푸시
 

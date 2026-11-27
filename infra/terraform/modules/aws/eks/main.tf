@@ -1,4 +1,4 @@
-# EKS: core(monolith) = Managed NodeGroup On-Demand / event = Karpenter Spot (modules/aws/karpenter)
+# EKS: core(core-service) = Managed NodeGroup On-Demand / event = Karpenter Spot (modules/aws/karpenter)
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"

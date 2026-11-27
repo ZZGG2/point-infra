@@ -27,17 +27,17 @@
 ## 3. 모놀리스 내부 모듈 경계
 
 ```
-com.pointplatform.monolith
+com.pointplatform.core
 ├── user/      (api, application, domain, infra)
 ├── asset/
-├── point/     ← Kafka consumer 포함 (reward 반영)
+├── point/     ← Redis Stream consumer 포함 (reward 반영)
 ├── cs/
 └── common/    (보안, 예외, 공통 응답)
 ```
 
 규칙:
 - 모듈 간 호출은 `application` 계층의 public 인터페이스로만 한다.
-- 다른 모듈의 `domain`, `infra` 패키지를 직접 import하지 않는다 (ArchUnit 테스트로 강제).
+- 다른 모듈의 `domain`, `infra` 패키지를 직접 import하지 않는다 (ArchUnit 테스트로 강제 — point-backend `ModuleBoundaryTest`).
 - 모듈별로 테이블을 소유하고 다른 모듈 테이블을 조인하지 않는다.
 → 향후 point 모듈 분리가 필요해져도 경계가 이미 있어 비용이 낮다.
 
@@ -45,17 +45,16 @@ com.pointplatform.monolith
 
 | From → To | 방식 | 이유 |
 |---|---|---|
-| Client → monolith / event | 동기 HTTP (ALB 경로 라우팅) | 단순 |
-| event → point(원장) | **비동기 Kafka** | 피크 트래픽을 원장 DB에 직접 전달하지 않음 (부하 평탄화) |
-| event → user (인증) | JWT 자체 검증 (공개키) | 이벤트 피크 시 monolith 호출 없음 |
+| Client → core-service / event | 동기 HTTP (ALB 경로 라우팅) | 단순 |
+| event → point(원장) | **비동기 Redis Stream** (consumer group, ADR-0019) | 피크 트래픽을 원장 DB에 직접 전달하지 않음 (부하 평탄화). core-service 가 자기 속도로 pull |
+| event → user (인증) | JWT 자체 검증 (공개키) | 이벤트 피크 시 core-service 호출 없음 |
 
 ## 5. 정합성 보장
 
 - **at-least-once 전달 + 멱등 소비** = 사실상 exactly-once 반영
   - Producer: `enable.idempotence=true`, `acks=all`
   - Consumer: `point_ledger.idempotency_key` UNIQUE, 중복 시 무시
-- 퀴즈 당첨은 이벤트 종료 후 **일괄 정산** — 정산 전제조건이 "Redis 당첨자 수 = 정산 대기 건수" 라서 정산 자체가 대사를 겸한다 (ADR-0017)
-- 출석 보상 등 즉시 반영 건은 Redis 기록 ↔ 원장을 **대사(Reconciliation) 배치**로 비교
+- 퀴즈 당첨·출석 보상 모두 즉시 반영 (ADR-0018) → Redis 당첨 기록·출석 비트맵 ↔ 원장을 이벤트 종료 후 **대사(Reconciliation) 배치**로 비교 — *미구현* ([domain-model §4](../03-development/domain-model.md))
 
 ## 6. 향후 진화 경로
 

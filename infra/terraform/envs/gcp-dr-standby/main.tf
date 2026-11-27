@@ -1,6 +1,6 @@
 # 상시 유지 리소스 (Pilot Light의 "불씨")
 #  - VPC / 서브넷 / Private Service Access
-#  - Cloud SQL (CDC 복제 대상, prevent_destroy)
+#  - Cloud SQL (논리 복제 구독자 — ADR-0020, prevent_destroy)
 #  - Global Static IP (Route 53 Secondary 레코드에 사전 등록)
 #  - Artifact Registry (CI 이중 푸시), Secret Manager
 #  - HA VPN + Cloud Router

@@ -90,6 +90,7 @@ Refs: #42
   | `[q]` | 질문 | 답변 필수 |
 - 리뷰는 코드에 대해, 사람에 대해 하지 않는다. 승인 시 무엇을 확인했는지 한 줄 남긴다.
 - **AI 생성 코드도 동일 기준.** 작성자가 설명하지 못하면 `[must]`.
+- **CodeRabbit 자동 리뷰** (`.coderabbit.yaml`): Ready for review 시점부터 AGENTS.md 기준으로 1차 리뷰. 사람 승인을 대체하지 않으며, 지적 사항은 반영하거나 답글로 사유를 남기고 Resolve. 재리뷰는 `@coderabbitai review` 코멘트.
 
 ## 6. 브랜치 보호 (Rulesets) — 모든 레포 `main`
 
@@ -130,8 +131,8 @@ Refs: #42
 | API 추가 (하위 호환) | ① backend PR: `openapi.yaml` + 구현 → 머지 ② frontend: `gen:api` 후 사용 |
 | API Breaking Change | ① backend에 `breaking-change` + `cross-repo` 이슈, frontend 연계 이슈 링크 ② 새 필드/버전 추가(구 필드 유지) ③ frontend 전환 ④ 구 필드 제거 PR (**Expand → Migrate → Contract**) |
 | 새 환경 변수 / 시크릿 | ① infra PR: ConfigMap·ExternalSecret 추가 → 머지 ② backend PR: 사용 코드 |
-| 새 Kafka 토픽 | ① infra: data-architecture 문서 + 토픽 정의 ② backend: producer/consumer |
-| DB 테이블 추가 (CDC 대상) | ① backend: Flyway ② infra: `cdc/` publication·connector 갱신 (같은 주 내) |
+| 새 보상 Redis Stream | ① infra: data-architecture §3 Stream 표 ② backend: Lua `XADD` / consumer |
+| DB 테이블 추가 (DR 복제 대상) | ① backend: Flyway (RDS·Cloud SQL 양쪽) ② infra: `cdc/publication.sql` 갱신 + `ALTER PUBLICATION … ADD TABLE` → `ALTER SUBSCRIPTION … REFRESH PUBLICATION` (같은 주 내) |
 | 공통 AI 규칙 변경 | ① infra: `team/ai/AGENTS.common.md` 수정 + 버전 업 ② `make sync-ai-rules` ③ 각 레포 동기화 PR |
 
 - 교차 레포 PR은 본문에 `Related: <org>/<repo>#<번호>`로 상호 링크.

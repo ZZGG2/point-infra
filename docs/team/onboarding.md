@@ -18,7 +18,7 @@
 ## 로컬 개발
 | 레포 | 명령 |
 |---|---|
-| backend | `make local-up && make run-monolith` |
+| backend | `make local-up && make run-core` |
 | frontend | `npm ci && npm run dev` (API: `VITE_API_BASE_URL=http://localhost:8080`) |
 | infra | `terraform fmt`, `tflint` 만 로컬 실행. **apply는 CI만** |
 

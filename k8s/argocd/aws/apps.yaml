@@ -32,4 +32,49 @@ spec:
     server: https://kubernetes.default.svc
   syncPolicy:
     automated: { prune: true, selfHeal: true }
-# TODO: keda, external-secrets, kube-prometheus-stack, aws-load-balancer-controller
+---
+# AWS Load Balancer Controller + Gateway API CRD·GatewayClass (ADR-0014: CRD 는 같은 Application 에서 설치)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-load-balancer-controller
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"     # apps-aws(Gateway·HTTPRoute) 보다 먼저
+spec:
+  project: default
+  sources:
+    - repoURL: https://aws.github.io/eks-charts
+      chart: aws-load-balancer-controller
+      targetRevision: 3.6.3                # LBC v3.6.3 — 개인 샌드박스(#8·#11)에서 Gateway API v1.6.0 과 검증
+      helm:
+        releaseName: aws-load-balancer-controller
+        valuesObject:
+          clusterName: point-main-eks      # infra/terraform/envs/aws-main local.cluster_name
+          region: ap-northeast-2
+          # vpcId 를 하드코딩하지 않고 VPC Name 태그로 조회 (노드 IMDS hop limit 때문에 자동 탐지 불가)
+          vpcTags: { Name: point-main-vpc }
+          serviceAccount:
+            create: true
+            name: aws-load-balancer-controller   # Terraform 의 EKS Pod Identity association 과 같은 이름이어야 한다
+    - repoURL: https://github.com/ZZGG2/point-infra.git   # TODO(#7): 기준 리포 결정 후 변경
+      targetRevision: main
+      path: k8s/platform/gateway/aws
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  # 차트가 렌더링할 때마다 웹훅 TLS 인증서·caBundle 을 새로 만든다 → 매번 OutOfSync 가 되지 않게 무시
+  ignoreDifferences:
+    - kind: Secret
+      name: aws-load-balancer-tls
+      jsonPointers: [/data]
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions: [".webhooks[]?.clientConfig.caBundle"]
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions: [".webhooks[]?.clientConfig.caBundle"]
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ServerSideApply=true, RespectIgnoreDifferences=true]   # Gateway API CRD 는 client-side apply 의 annotation 크기 제한을 넘는다
+# TODO: keda, external-secrets, kube-prometheus-stack

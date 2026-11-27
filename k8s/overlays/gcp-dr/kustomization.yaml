@@ -1,14 +1,14 @@
-# 선택적 복구: monolith + maintenance 만 배포. event-service 없음. (ADR-0004)
+# 선택적 복구: core-service + maintenance 만 배포. event-service 없음. (ADR-0004)
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../base/monolith
+  - ../../base/core-service
   - ../../base/maintenance
-  - ingress.yaml
+  - gateway.yaml          # Gateway + HTTPRoute (ADR-0014)
 configMapGenerator:
-  - name: monolith-config
-    literals: [SPRING_PROFILES_ACTIVE=gcp-dr, KAFKA_ENABLED=false, DR_MODE=true]
+  - name: core-service-config   # REWARD_STREAM_ENABLED=false = 원장 반영 consumer·Redis health 비활성 (DR 에는 Redis 없음, ADR-0004·0019)
+    literals: [SPRING_PROFILES_ACTIVE=gcp-dr, REWARD_STREAM_ENABLED=false, DR_MODE=true]
 images:   # Artifact Registry (CI 이중 푸시, ADR-0010)
-  - name: monolith
-    newName: asia-northeast3-docker.pkg.dev/PROJECT_ID/point-apps/monolith
+  - name: core-service
+    newName: asia-northeast3-docker.pkg.dev/PROJECT_ID/point-apps/core-service
     newTag: "0.1.0"

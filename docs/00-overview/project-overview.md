@@ -24,20 +24,20 @@
 
 | 도메인 | 기능 | 트래픽 특성 | 배치 |
 |---|---|---|---|
-| user | 회원가입, 로그인, 인증 | 일정 | Monolith |
-| asset | 마이데이터 기반 자산 조회 (Mock 연동) | 일정, 출근시간 소폭 증가 | Monolith |
-| point | 포인트 원장, 충전/사용/환불, 잔액 조회 | 일정 (이벤트 결과는 비동기 반영) | Monolith |
-| cs | 고객센터 게시판, 공지 | 낮음 | Monolith |
+| user | 회원가입, 로그인, 인증 | 일정 | core-service |
+| asset | 마이데이터 기반 자산 조회 (Mock 연동) | 일정, 출근시간 소폭 증가 | core-service |
+| point | 포인트 원장, 충전/사용/환불, 잔액 조회 | 일정 (이벤트 결과는 비동기 반영) | core-service |
+| cs | 고객센터 게시판, 공지 | 낮음 | core-service |
 | **event** | **출석체크, 퀴즈, 선착순 포인트 지급, 대기열** | **주 1~2회, 수백 배 폭주** | **MSA** |
 
 ### 대표 시나리오
 > "매주 수요일 10:00, 선착순 10만 명에게 퀴즈 정답 시 500P 지급"
-> → 09:55 KEDA Cron이 event-service를 사전 확장 → 10:00 트래픽 폭주 → Redis 대기열/중복 방지 → Kafka로 지급 이벤트 발행 → Monolith point 모듈이 멱등하게 원장 반영.
+> → 09:55 KEDA Cron이 event-service를 사전 확장 → 10:00 트래픽 폭주 → Redis 대기열/중복 방지 → 당첨 판정과 함께 Redis Stream 에 지급 기록 → core-service point 모듈이 읽어 멱등하게 원장 반영.
 
 ## 4. 범위
 
 ### In Scope
-- AWS Main 환경 전체 (VPC, EKS, RDS PostgreSQL, ElastiCache, MSK, Route 53 등)
+- AWS Main 환경 전체 (VPC, EKS, RDS PostgreSQL, ElastiCache, Route 53 등)
 - GCP DR Pilot Light (Cloud SQL 상시 복제 + GKE 온디맨드 생성)
 - Terraform 모듈, GitHub Actions CI/CD, ArgoCD GitOps
 - 관측성(Prometheus/Grafana, CloudWatch), 부하 테스트(k6), DR 훈련

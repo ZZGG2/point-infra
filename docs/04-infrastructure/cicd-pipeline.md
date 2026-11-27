@@ -49,16 +49,16 @@
 
 ```
 k8s/argocd/
-├── aws/          # EKS root → monolith + event-service + platform, 이벤트 시간 Sync Window
-└── gcp-dr/       # GKE root (Terraform argocd-bootstrap 이 등록) → monolith + maintenance
+├── aws/          # EKS root → core-service + event-service + platform, 이벤트 시간 Sync Window
+└── gcp-dr/       # GKE root (Terraform argocd-bootstrap 이 등록) → core-service + maintenance
 ```
-- AWS: `monolith`, `event-service`, `web` 생성 + Gateway(ALB)
-- GCP-DR: `monolith`, `web` 생성 + `maintenance` (이벤트 경로 503) → **선택적 복구가 Git에 선언됨**
+- AWS: `core-service`, `event-service`, `web` 생성 + Gateway(ALB)
+- GCP-DR: `core-service`, `web` 생성 + `maintenance` (이벤트 경로 503) → **선택적 복구가 Git에 선언됨**
 
 ## 5. 배포 전략
 
 | 서비스 | 전략 | 이유 |
 |---|---|---|
-| monolith | Rolling Update (maxUnavailable 0) | 단순, 무중단 |
+| core-service | Rolling Update (maxUnavailable 0) | 단순, 무중단 |
 | event-service | Rolling Update + **이벤트 시간대 배포 금지 (Sync Window)** | 피크 중 변경 리스크 제거 |
 | (확장) | Argo Rollouts Canary | Phase 6 선택 과제 |

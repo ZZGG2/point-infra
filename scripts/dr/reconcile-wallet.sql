@@ -1,8 +1,8 @@
 -- Failover 시 지갑 잔액을 원장 기준으로 맞춘다 (fix-sequences.sql 직후, 앱 트래픽 유입 전 1회)
 --
--- 이유: Debezium JDBC Sink 는 테이블별 토픽(cdc.point.point_ledger / cdc.point.point_wallet)을
---       병렬 태스크로 소비한다 → 트랜잭션 단위 원자성이 없어, 복제가 끊긴 순간
---       원장만 반영되고 지갑은 이전 값(또는 반대)인 상태가 남을 수 있다.
+-- 이유: 논리 복제(ADR-0020)는 트랜잭션 단위로 적용하므로 원장·지갑이 어긋나지 않는 것이 정상이다.
+--       이 스크립트는 안전장치로 유지한다 (드릴에서 drift 0 이 반복 확인되면 재검토 — ADR-0020).
+--       drift 가 나오면 복제 외 원인(앱 버그 등)이므로 wallet_drift 결과를 대사 자료로 남긴다.
 -- 기준: 원장(append-only)이 Source of Truth. 지갑 = 사용자별 마지막 원장 행의 balance_after.
 --       원장은 수정하지 않는다. 지갑은 원장에서 파생된 값이므로 보정 대상이다.
 BEGIN;

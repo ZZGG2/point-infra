@@ -1,0 +1,96 @@
+# CodeRabbit AI 리뷰 설정 — point-infra
+# 스키마: https://coderabbit.ai/integrations/schema.v2.json
+# 리뷰 기준의 원본은 AGENTS.md (팀 공통 규칙 + 레포별 규칙). 여기에는 경로별 중점 사항만 요약한다.
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: ko-KR
+
+reviews:
+  profile: chill
+  request_changes_workflow: false   # 승인/반려는 사람 리뷰어가 한다 (github-workflow.md)
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+
+  auto_review:
+    enabled: true
+    drafts: false                   # Draft 는 방향 공유용 → Ready for review 시점부터 리뷰
+    base_branches:
+      - main
+
+  path_filters:
+    - "!load-test/results/**"
+    - "!**/.terraform/**"
+    - "!**/.terraform.lock.hcl"
+
+  path_instructions:
+    - path: "**/*"
+      instructions: |
+        AGENTS.md 의 규칙을 기준으로 리뷰한다. 특히:
+        - 시크릿·키·비밀번호·토큰·계정 ID·실제 도메인 하드코딩 여부 (예시는 CHANGE_ME 사용)
+        - 한 PR = 한 목적. 이슈 범위 밖 변경(리팩터링·포맷 혼합)이 섞였는지
+        - Decision Lock 표의 확정 사항(ADR)을 대체하는 변경이면 "ADR 제안 필요"로 지적
+        - TODO 는 `TODO(#이슈번호): 설명` 형식인지
+        - RPO 를 "0" 으로 표기하지 않는지 (목표: RPO ≤ 5초)
+
+    - path: "infra/terraform/**"
+      instructions: |
+        - modules/ 에 provider·backend 블록이 없어야 한다 (provider 는 envs/* 에서만)
+        - 모든 변수에 description·type, 민감 값은 sensitive = true
+        - 공통 태그/라벨(project, env, managed-by, cost-center) 적용 여부
+        - envs/gcp-dr-* 에서 S3 backend, terraform_remote_state(S3), AWS provider 사용 금지 (ADR-0010)
+        - envs/gcp-dr-standby 의 Cloud SQL·Static IP 에 prevent_destroy = true 유지
+        - 리소스 이름 변경 시 moved {} 블록 동반 여부
+        - 보안그룹/방화벽 0.0.0.0/0 인바운드 금지 (ALB 443 제외)
+        - CIDR(AWS 10.10.0.0/16, GCP 10.20.0.0/16) 변경 금지
+        - prevent_destroy, deletion_protection 비활성화 금지
+
+    - path: "k8s/**"
+      instructions: |
+        - k8s/base 에 환경 특정 값이 없어야 한다 (환경 차이는 overlays/{aws,gcp-dr})
+        - overlays/gcp-dr 에 event-service 추가 금지 (ADR-0004)
+        - images: newTag 를 사람이 직접 수정했는지 확인 (backend CI 봇의 태그 bump PR 만 허용)
+        - Deployment 에 resources.requests, readiness/liveness probe, PDB, non-root securityContext 필수
+        - 확장은 Karpenter + KEDA 만 사용 (ADR-0002)
+
+    - path: "docs/02-adr/**"
+      instructions: |
+        - Accepted ADR 본문은 수정하지 않는다. 결정 변경은 새 ADR + 기존 ADR 상태를 `Superseded by ADR-XXXX` 로만 변경
+        - 새 ADR 번호가 docs/02-adr/README.md 표의 마지막 번호 + 1 인지
+
+    - path: "scripts/dr/**"
+      instructions: |
+        - DR 경로에서 AWS 리소스(CLI, S3, IAM 등) 참조 금지 (ADR-0010)
+        - 셸 스크립트는 set -euo pipefail, 변수 인용, 재실행 시 안전(멱등)한지
+        - SQL 은 point_ledger UPDATE/DELETE 금지 (append-only)
+
+    - path: "cdc/**"
+      instructions: |
+        - 복제 계정 비밀번호·접속 문자열에 자격 증명 평문이 없어야 한다 (psql 변수로 시크릿 주입)
+        - PostgreSQL 논리 복제 전제(ADR-0020)와 RPO ≤ 5초 목표에 영향을 주는 변경인지 확인 (Publication 대상 테이블, slot, heartbeat)
+
+    - path: ".github/workflows/**"
+      instructions: |
+        - 최소 권한 permissions, 외부 액션은 버전 고정
+        - 보안 스캔·브랜치 보호를 우회하거나 비활성화하는 변경 금지
+        - terraform apply/destroy 는 CI 파이프라인에서만, 승인 게이트를 거치는지
+
+  tools:
+    gitleaks:
+      enabled: true
+    shellcheck:
+      enabled: true
+    yamllint:
+      enabled: true
+    actionlint:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"

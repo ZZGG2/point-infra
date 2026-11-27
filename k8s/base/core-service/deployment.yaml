@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: monolith
-  labels: { app: monolith }
+  name: core-service
+  labels: { app: core-service }
 spec:
   replicas: 2
   strategy:
     rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
   selector:
-    matchLabels: { app: monolith }
+    matchLabels: { app: core-service }
   template:
     metadata:
-      labels: { app: monolith }
+      labels: { app: core-service }
     spec:
-      serviceAccountName: monolith
+      serviceAccountName: core-service
       securityContext: { runAsNonRoot: true, runAsUser: 10001 }
       containers:
-        - name: monolith
-          image: monolith:latest   # overlay 에서 레지스트리/태그 치환
+        - name: core-service
+          image: core-service:latest   # overlay 에서 레지스트리/태그 치환
           ports: [{ containerPort: 8080 }]
           envFrom:
-            - configMapRef: { name: monolith-config }
-            - secretRef: { name: monolith-db }      # External Secrets 가 생성
+            - configMapRef: { name: core-service-config }
+            - secretRef: { name: core-service-db }      # External Secrets 가 생성
           resources:
             requests: { cpu: 500m, memory: 1Gi }
             limits: { memory: 1Gi }
@@ -36,21 +36,21 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: monolith
+  name: core-service
 spec:
-  selector: { app: monolith }
+  selector: { app: core-service }
   ports: [{ port: 80, targetPort: 8080 }]
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: monolith
+  name: core-service
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: monolith
+  name: core-service
 spec:
   minAvailable: 1
   selector:
-    matchLabels: { app: monolith }
+    matchLabels: { app: core-service }

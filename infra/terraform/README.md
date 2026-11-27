@@ -13,8 +13,8 @@
 구현 상태: ✅ 초안 작성 · 🟡 TODO 스텁
 | 모듈 | 상태 |
 |---|---|
-| aws/vpc, aws/eks, aws/aurora (→ rds 로 교체 예정), gcp/argocd-bootstrap | ✅ |
-| aws/karpenter, elasticache, msk, ecr, edge (→ waf 로 교체 예정), gcp/network, cloudsql, gke, shared/vpn | 🟡 |
+| aws/vpc, aws/eks, DB 모듈 (ADR-0006 기준 — rds 로 교체 예정), gcp/argocd-bootstrap | ✅ |
+| aws/karpenter, elasticache, ecr, edge (→ waf 로 교체 예정), gcp/network, cloudsql, gke, shared/vpn | 🟡 |
 
 ## 설계(ADR) ↔ 현재 스캐폴딩 차이
 
@@ -22,10 +22,9 @@
 
 | 목표 설계 (문서 기준) | 현재 스캐폴딩 | 근거 |
 |---|---|---|
-| `modules/aws/rds` — RDS for PostgreSQL 16 Multi-AZ | `modules/aws/aurora` (Aurora 클러스터), `envs/aws-main` 의 `module "aurora"`, `output "aurora_endpoint"` | ADR-0013 |
+| `modules/aws/rds` — RDS for PostgreSQL 16 Multi-AZ | ADR-0006 기준 클러스터형 DB 모듈 — 모듈 디렉터리, `envs/aws-main` 의 DB `module` 블록·엔드포인트 `output` 이름까지 함께 교체 (#8) | ADR-0013 |
 | `modules/aws/waf` — 리전 WAF + Gateway ALB 연결 | `modules/aws/edge` (Route 53·ACM·CloudFront·WAF 스텁, CloudFront 는 사용하지 않음) | ADR-0014, 0015 |
 | `modules/aws/argocd-bootstrap` | 없음 (`modules/gcp/argocd-bootstrap` 만 존재) | ADR-0009 |
-| `k8s/overlays/{aws,gcp-dr}/gateway.yaml` — Gateway + HTTPRoute | `k8s/overlays/{aws,gcp-dr}/ingress.yaml` (Ingress) | ADR-0014 |
 | `k8s/base/web` — 프론트엔드 web 파드 | 없음 | ADR-0015 |
 | `k8s/overlays/aws/db-init.yaml` — `app_rw` 생성 Sync Job | 없음 | ADR-0013 |
 

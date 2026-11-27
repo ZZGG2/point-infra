@@ -1,17 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../base/monolith
+  - ../../base/core-service
   - ../../base/event-service
-  - ingress.yaml
+  - gateway.yaml          # Gateway + HTTPRoute (ADR-0014)
 configMapGenerator:
-  - name: monolith-config
-    literals: [SPRING_PROFILES_ACTIVE=aws, KAFKA_ENABLED=true, DR_MODE=false]
+  - name: core-service-config   # REWARD_STREAM_ENABLED=true = 원장 반영 Redis Stream consumer 활성 (ADR-0019). REDIS_HOST 는 elasticache 모듈 생성 후 추가
+    literals: [SPRING_PROFILES_ACTIVE=aws, REWARD_STREAM_ENABLED=true, DR_MODE=false]
   - name: event-config
     literals: [SPRING_PROFILES_ACTIVE=aws]
 images:   # CI 가 태그를 자동 커밋
-  - name: monolith
-    newName: ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/monolith
+  - name: core-service
+    newName: ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/core-service
     newTag: "0.1.0"
   - name: event-service
     newName: ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/event-service

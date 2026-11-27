@@ -1,5 +1,5 @@
 # ADR-0014: 트래픽 진입에 Gateway API 채택
-- 상태: Accepted · 날짜: 2026-11-13
+- 상태: Accepted · 날짜: 2026-11-13 · 용어 갱신: 본문의 "monolith" 는 core-service 로 읽는다 (#35)
 
 ## 맥락
 같은 매니페스트로 AWS(EKS)와 GCP DR(GKE)에 배포해야 한다(ADR-0003, 0010). 경로 규칙이 클라우드 전용 어노테이션에 묶이면

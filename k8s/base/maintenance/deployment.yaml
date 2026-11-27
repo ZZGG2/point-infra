@@ -7,6 +7,10 @@ data:
   default.conf: |
     server {
       listen 8080;
+      location = /healthz {          # LB 헬스체크용 (GKE HealthCheckPolicy) — 이 경로만 200
+        default_type text/plain;
+        return 200 'ok';
+      }
       location / {
         default_type application/json;
         return 503 '{"code":"EVENT_MAINTENANCE","message":"이벤트는 시스템 점검으로 일시 중단되었습니다."}';

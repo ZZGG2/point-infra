@@ -1,5 +1,5 @@
 # ADR-0008: Kafka 비동기 원장 반영
-- 상태: Accepted · 날짜: 2026-11-05
+- 상태: Superseded by ADR-0019 · 날짜: 2026-11-05 · 용어 갱신: 본문의 "monolith" 는 core-service 로 읽는다 (#35)
 
 ## 결정
 event-service는 당첨 결과를 **Kafka(MSK)** 로 발행하고, monolith point 모듈이 소비해 원장에 반영한다.

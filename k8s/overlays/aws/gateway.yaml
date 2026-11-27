@@ -1,0 +1,87 @@
+# Gateway API (AWS Load Balancer Controller → ALB) — ADR-0014
+# 경로 규칙(HTTPRoute)은 overlays/gcp-dr 와 같은 형태(클라우드 중립).
+# AWS 전용 값은 LoadBalancerConfiguration / TargetGroupConfiguration 에만 둔다.
+# GatewayClass(aws-alb)는 클러스터 전역이라 k8s/platform/gateway/aws 에 있다.
+apiVersion: gateway.k8s.aws/v1
+kind: LoadBalancerConfiguration
+metadata:
+  name: point-alb
+spec:
+  loadBalancerName: point-main-alb        # Terraform 이 이 이름으로 ALB 를 조회해 WAF 를 연결 (ADR-0014)
+  scheme: internet-facing
+  securityGroups: [point-main-alb]        # Terraform 이 만드는 sg-alb (허용 CIDR = alb_ingress_cidrs, network-design §4)
+  manageBackendSecurityGroupRules: true   # ALB → 파드(노드 SG) 인바운드 규칙은 컨트롤러가 관리
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: point
+spec:
+  gatewayClassName: aws-alb
+  infrastructure:
+    parametersRef:
+      group: gateway.k8s.aws
+      kind: LoadBalancerConfiguration
+      name: point-alb
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      # 도메인·ACM 확보 후 HTTPS 443 리스너 추가 + 80 → 443 리다이렉트 (ADR-0014, network-design §4)
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: point
+spec:
+  parentRefs:
+    - name: point
+      sectionName: http
+  rules:   # PathPrefix 가 겹치면 긴 경로가 우선한다
+    - matches: [{ path: { type: PathPrefix, value: /api/events } }]
+      backendRefs: [{ name: event-service, port: 80 }]
+    - matches: [{ path: { type: PathPrefix, value: /api } }]
+      backendRefs: [{ name: core-service, port: 80 }]
+    # TODO(#15): k8s/base/web 이 생기기 전까지 이 규칙은 backend 없음 → "/" 만 500 (다른 경로는 정상)
+    - matches: [{ path: { type: PathPrefix, value: / } }]
+      backendRefs: [{ name: web, port: 80 }]
+---
+# 대상 그룹: 파드 IP 직접 등록 + 서비스별 헬스체크 (Service 이름으로 연결)
+apiVersion: gateway.k8s.aws/v1
+kind: TargetGroupConfiguration
+metadata:
+  name: core-service
+spec:
+  targetReference: { name: core-service }
+  defaultConfiguration:
+    targetType: ip
+    healthCheckConfig:
+      healthCheckPath: /actuator/health/readiness
+      healthCheckPort: "8080"
+      healthCheckProtocol: HTTP
+---
+apiVersion: gateway.k8s.aws/v1
+kind: TargetGroupConfiguration
+metadata:
+  name: event-service
+spec:
+  targetReference: { name: event-service }
+  defaultConfiguration:
+    targetType: ip
+    healthCheckConfig:
+      healthCheckPath: /actuator/health/readiness
+      healthCheckPort: "8081"
+      healthCheckProtocol: HTTP
+---
+apiVersion: gateway.k8s.aws/v1
+kind: TargetGroupConfiguration
+metadata:
+  name: web
+spec:
+  targetReference: { name: web }   # TODO(#15): Service web 이 생기면 적용된다
+  defaultConfiguration:
+    targetType: ip
+    healthCheckConfig:
+      healthCheckPath: /healthz
+      healthCheckPort: "8080"
+      healthCheckProtocol: HTTP

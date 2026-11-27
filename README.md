@@ -27,12 +27,12 @@
                           ▼                                                                    ▼
   ┌──────────────── AWS ap-northeast-2 (Main, 100%) ────────────────┐   ┌──────── GCP asia-northeast3 (DR) ────────┐
   │ WAF → ALB (Gateway API)                                          │   │ [상시] VPC, Cloud SQL(복제 대상),          │
-  │   ├─ /api/**         → Monolith (user/asset/point/cs)  On-Demand │   │        Static IP, Secret Manager,          │
+  │   ├─ /api/**         → core-service user/asset/point/cs OnDemand │   │        Static IP, Secret Manager,          │
   │   ├─ /api/events/**  → event-service (MSA)       Karpenter Spot  │   │        Artifact Registry                    │
   │   └─ /**             → web (SPA)                                 │   │ [장애 시 생성] GKE + ArgoCD               │
-  │                         │ Redis(대기열/중복방지)                    │   │        → Monolith + web 배포               │
-  │                         └─ Kafka(MSK) ──▶ Monolith point 모듈     │   │        → /api/events/** = 점검 페이지       │
-  │ RDS PostgreSQL ──(Debezium CDC / MSK Connect)──── HA VPN ────────┼──▶│                                            │
+  │                         │ Redis(대기열/중복방지/판정)              │   │        → core-service + web 배포           │
+  │                         └─ Redis Stream ──▶ core-service(point)   │   │        → /api/events/** = 점검 페이지       │
+  │ RDS PostgreSQL ──(PostgreSQL 논리 복제)────────── HA VPN ────────┼──▶│                                            │
   └──────────────────────────────────────────────────────────────────┘   └────────────────────────────────────────────┘
 ```
 
@@ -43,11 +43,12 @@
 | 단계 | 문서 | 내용 |
 |---|---|---|
 | 개요 | [project-overview](docs/00-overview/project-overview.md) | 배경, 비즈니스 시나리오, 범위, 성공 지표 |
+| | [implementation-status](docs/00-overview/implementation-status.md) | **설계 ↔ 코드 구현 현황** (무엇이 실제로 있고 무엇이 설계만인가) |
 | | [requirements](docs/00-overview/requirements.md) | 기능/비기능 요구사항, 규제 고려사항 |
 | 아키텍처 | [architecture-overview](docs/01-architecture/architecture-overview.md) | 전체 구조, 컴포넌트 책임 |
 | | [hybrid-msa](docs/01-architecture/hybrid-msa.md) | 모놀리스/MSA 경계, 이벤트 흐름 |
 | | [network-design](docs/01-architecture/network-design.md) | CIDR, 서브넷, VPN, 보안그룹 |
-| | [data-architecture](docs/01-architecture/data-architecture.md) | DB, 캐시, Kafka 토픽, CDC 대상 |
+| | [data-architecture](docs/01-architecture/data-architecture.md) | DB, 캐시, 원장 반영 Redis Stream, DR 복제 대상 |
 | 의사결정 | [ADR 목록](docs/02-adr/README.md) | 기술 선택 이유 (Why / Why not) |
 | 개발 | [development-guide](docs/03-development/development-guide.md) | 로컬 환경, 브랜치/커밋 규칙 |
 | | [api-spec](docs/03-development/api-spec.md) | API 초안 |
@@ -73,7 +74,7 @@
 | 레포 | 내용 |
 |---|---|
 | **point-infra** (이 레포) | Terraform, K8s(GitOps), CDC, DR, 부하 테스트, **설계 문서 · 팀 규칙 원본** |
-| [point-backend](https://github.com/ZZGG2/point-backend) | Spring Boot — monolith, event-service, OpenAPI |
+| [point-backend](https://github.com/ZZGG2/point-backend) | Spring Boot — core-service, event-service, OpenAPI |
 | [point-frontend](https://github.com/ZZGG2/point-frontend) | React + Vite + TypeScript SPA |
 
 분리 이유: [ADR-0012](docs/02-adr/0012-polyrepo-split.md)
@@ -90,7 +91,7 @@ point-infra/
 │   ├── modules/{aws,gcp,shared}/
 │   └── envs/{aws-main, gcp-dr-standby, gcp-dr-compute}/
 ├── k8s/{base, overlays/{aws,gcp-dr}, platform, argocd}/
-├── cdc/                     # Debezium Source / JDBC Sink
+├── cdc/                     # DR 논리 복제 SQL (RDS Publication / Cloud SQL Subscription)
 ├── load-test/k6/
 ├── scripts/                 # dr/, setup-github.sh, sync-ai-rules.sh
 └── .github/                 # 워크플로, PR·이슈 템플릿, CODEOWNERS, labels
@@ -107,12 +108,12 @@ point-infra/
 
 ## 6. 진행 현황
 
-로드맵: [docs/08-project-management/roadmap.md](docs/08-project-management/roadmap.md)
+로드맵: [docs/08-project-management/roadmap.md](docs/08-project-management/roadmap.md) · 영역별 구현 현황: [implementation-status](docs/00-overview/implementation-status.md)
 
 - [ ] Phase 0 — 설계 및 문서화
-- [ ] Phase 1 — 애플리케이션 MVP (로컬)
-- [ ] Phase 2 — AWS Main 인프라 (Terraform)
+- [ ] Phase 1 — 애플리케이션 MVP (로컬) — 핵심 경로 완료, asset·cs·대기열·환불 남음
+- [ ] Phase 2 — AWS Main 인프라 (Terraform) — vpc·eks 작성, DB 모듈은 RDS for PostgreSQL 16(ADR-0013)으로 교체 예정(#8), 나머지 모듈 스텁
 - [ ] Phase 3 — EKS + GitOps + 오토스케일링
-- [ ] Phase 4 — CDC 복제 + GCP Standby
+- [ ] Phase 4 — DR 복제(논리 복제) + GCP Standby
 - [ ] Phase 5 — DR Failover 자동화 + 훈련
 - [ ] Phase 6 — 부하 테스트, 비용 분석, 회고

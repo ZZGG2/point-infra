@@ -2,7 +2,7 @@
 
 ## 1. 디렉터리 구조
 
-> 아래 구조는 목표 설계 기준이다. 현재 스캐폴딩과의 차이(aurora → rds, edge → waf 등): [infra/terraform/README](../../infra/terraform/README.md)
+> 아래 구조는 목표 설계 기준이다. 현재 스캐폴딩과의 차이(DB 모듈 → rds, edge → waf 등): [infra/terraform/README](../../infra/terraform/README.md)
 
 ```
 infra/terraform/
@@ -14,10 +14,9 @@ infra/terraform/
 │   │   ├── vpc/          # 3-tier subnet, NAT, VPC Endpoints
 │   │   ├── eks/          # 클러스터, Managed NodeGroup(AL2023), Pod Identity, 애드온
 │   │   ├── karpenter/    # IAM, SQS(Interruption), Helm
-│   │   ├── rds/          # PostgreSQL 16, 파라미터 그룹(logical replication, force_ssl), KMS  ※ 현재 스캐폴딩: aurora/
+│   │   ├── rds/          # PostgreSQL 16, 파라미터 그룹(logical replication, force_ssl), KMS  ※ 현재 스캐폴딩은 ADR-0006 기준 DB 모듈 (#8 에서 교체)
 │   │   ├── elasticache/
-│   │   ├── msk/          # 클러스터 + MSK Connect(Debezium)
-│   │   ├── ecr/          # monolith, event-service, web
+│   │   ├── ecr/          # core-service, event-service, web
 │   │   ├── waf/          # 리전 WAF + Gateway ALB 연결  ※ 현재 스캐폴딩: edge/
 │   │   └── argocd-bootstrap/  # ArgoCD + Application 등록 (LB Controller·External Secrets·KEDA·앱)  ※ 구현 예정
 │   ├── gcp/
@@ -78,7 +77,8 @@ cd infra/terraform/envs/gcp-dr-standby && terraform init && terraform apply
 | 항목 | 요구사항 |
 |---|---|
 | EKS 애드온 순서 | `vpc-cni`(Prefix Delegation), `eks-pod-identity-agent` 는 `before_compute = true` — 노드 그룹보다 먼저 설치돼야 첫 노드부터 설정이 적용된다. 늦게 붙으면 기존 노드는 IP 한도가 그대로이고 Pod Identity 자격 증명을 못 받는다 |
-| MSK 인증 (IAM) | 클러스터를 IAM 인증으로 만들면 클라이언트는 포트 9098 + `SASL_SSL` / `AWS_MSK_IAM` 으로 접속해야 한다. 앱(monolith, event-service)에 `software.amazon.msk:aws-msk-iam-auth` 와 aws 프로필 Kafka 설정이 필요하고(현재 point-backend 에 없음 → backend 이슈로 선행), 각 ServiceAccount 에 `kafka-cluster:Connect/DescribeTopic/ReadData/WriteData/DescribeGroup/AlterGroup` 권한의 Pod Identity Association 을 둔다. MSK Connect(Debezium) 는 서비스 실행 역할에 같은 권한을 준다 |
+| DR 논리 복제 (ADR-0020) | RDS 파라미터 그룹에 `rds.logical_replication=1`, `shared_preload_libraries` 에 `pg_cron`, `max_slot_wal_keep_size` (모두 재부팅 필요할 수 있음 → 첫 apply 에 포함). sg-rds 에 GCP Cloud SQL 대역 `10.30.0.0/20` 5432 인바운드, GCP PSA 피어링 custom route export. 구독은 이 경로가 열린 뒤 `cdc/subscription.sql` 로 만든다 |
+| ElastiCache (ADR-0019) | 원장 반영 Stream 을 담으므로 **Multi-AZ + 자동 장애 조치** 필수, 전송 암호화. 보존 7일분 Stream 을 고려해 메모리 산정 |
 
 ## 6. 비용 안전장치
 

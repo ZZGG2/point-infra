@@ -37,13 +37,12 @@ module "aurora" {
   name                       = local.name
   vpc_id                     = module.vpc.vpc_id
   db_subnet_group            = module.vpc.database_subnet_group
-  allowed_security_group_ids = [module.eks.node_security_group_id] # TODO: + MSK Connect SG
+  allowed_security_group_ids = [module.eks.node_security_group_id] # TODO(#8): RDS 모듈 교체 시 Cloud SQL 대역(10.30.0.0/20) 5432 인바운드, max_slot_wal_keep_size·pg_cron 파라미터 (ADR-0020)
   tags                       = local.tags
 }
 
 # TODO: module "karpenter"   { source = "../../modules/aws/karpenter" }
 # TODO: module "elasticache" { source = "../../modules/aws/elasticache" }
-# TODO: module "msk"         { source = "../../modules/aws/msk" }
 # TODO: module "ecr"         { source = "../../modules/aws/ecr" }
 # TODO: module "edge"        { source = "../../modules/aws/edge" }
 # TODO: module "vpn_aws_side" — GCP HA VPN 인터페이스 IP를 변수로 받아 생성

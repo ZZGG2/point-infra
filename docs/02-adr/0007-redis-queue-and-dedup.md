@@ -1,5 +1,5 @@
 # ADR-0007: Redis 기반 대기열·중복 방지
-- 상태: Accepted · 날짜: 2026-11-05
+- 상태: Accepted · 날짜: 2026-11-05 · 구현 메모: 실제 키는 클러스터 해시태그 형식 `event:{id}:…` 이고 `winners`·`amount` 키가 추가됐다. `queue`(대기열)와 이벤트 키 TTL 은 미구현 → [implementation-status §3.2](../00-overview/implementation-status.md#32-데이터도메인)
 
 ## 결정
 이벤트 참여 판정(중복 방지, 선착순 재고, 대기열 순번)은 **ElastiCache Redis**에서 **Lua 스크립트로 원자 처리**한다. DB는 판정 경로에 두지 않는다.

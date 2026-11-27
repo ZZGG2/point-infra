@@ -1,0 +1,68 @@
+# Gateway API (GKE Gateway Controller → Global External Application LB) — ADR-0014
+# 경로 규칙은 overlays/aws 와 같은 형태. 차이: GatewayClass, /api/events → maintenance (선택적 복구, ADR-0004)
+# GatewayClass gke-l7-global-external-managed 는 GKE 가 제공한다 (클러스터의 Gateway API 활성화 필요 — Terraform gke 모듈)
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: point
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  addresses:
+    - type: NamedAddress
+      value: dr-ingress-ip          # gcp-dr-standby 에서 사전 예약한 Global Static IP (DNS Secondary 레코드)
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      # 도메인 확보 후 HTTPS 443 (Certificate Manager)
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: point
+spec:
+  parentRefs:
+    - name: point
+      sectionName: http
+  rules:
+    - matches: [{ path: { type: PathPrefix, value: /api/events } }]
+      backendRefs: [{ name: maintenance, port: 80 }]   # 503 + EVENT_MAINTENANCE (ADR-0004)
+    - matches: [{ path: { type: PathPrefix, value: /api } }]
+      backendRefs: [{ name: core-service, port: 80 }]
+    # TODO(#15): k8s/base/web 이 생기기 전까지 이 규칙은 backend 없음 → "/" 만 500 (다른 경로는 정상)
+    - matches: [{ path: { type: PathPrefix, value: / } }]
+      backendRefs: [{ name: web, port: 80 }]
+---
+# GKE LB 헬스체크 경로 (기본값은 "/" → core-service 는 401/404, maintenance 는 503 이라 unhealthy 가 된다)
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: core-service
+spec:
+  default:
+    config:
+      type: HTTP
+      httpHealthCheck: { requestPath: /actuator/health/readiness, port: 8080 }
+  targetRef: { group: "", kind: Service, name: core-service }
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: maintenance
+spec:
+  default:
+    config:
+      type: HTTP
+      httpHealthCheck: { requestPath: /healthz, port: 8080 }   # base/maintenance 의 200 응답 경로
+  targetRef: { group: "", kind: Service, name: maintenance }
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: web
+spec:
+  default:
+    config:
+      type: HTTP
+      httpHealthCheck: { requestPath: /healthz, port: 8080 }
+  targetRef: { group: "", kind: Service, name: web }   # TODO(#15): Service web 이 생기면 적용된다

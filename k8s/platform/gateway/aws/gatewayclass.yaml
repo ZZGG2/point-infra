@@ -1,0 +1,9 @@
+# 클러스터 전역 → 앱 overlay(kustomize namespace 적용) 밖에 둔다 (ADR-0014)
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: aws-alb
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true   # 같은 Sync 에서 CRD 가 먼저 생긴다
+spec:
+  controllerName: gateway.k8s.aws/alb

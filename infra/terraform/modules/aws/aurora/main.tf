@@ -1,4 +1,4 @@
-# Aurora PostgreSQL — Debezium CDC를 위해 논리 복제 활성화 (ADR-0005, 0006)
+# Aurora PostgreSQL — DR 논리 복제(PUBLICATION)를 위해 논리 복제 활성화 (ADR-0020, 0006)
 # ※ ADR-0006 은 ADR-0013(RDS for PostgreSQL)으로 대체됨 → 구현 단계에서 modules/aws/rds 로 교체 예정
 resource "aws_rds_cluster_parameter_group" "this" {
   name   = "${var.name}-aurora-pg16"
@@ -53,7 +53,7 @@ resource "aws_security_group" "aurora" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = var.allowed_security_group_ids # EKS 노드, MSK Connect
+    security_groups = var.allowed_security_group_ids # EKS 노드 (+ RDS 교체 시 GCP Cloud SQL 대역 10.30.0.0/20 — ADR-0020)
   }
   egress {
     from_port   = 0

@@ -59,7 +59,7 @@ jobs:
       - name: "[7] Cloud SQL 승격 (계정 전환, 시퀀스·지갑 잔액 보정) — 클러스터 내부 Job"
         run: ./scripts/dr/promote-cloudsql.sh promote
 
-      - name: "[8] monolith Ready 대기"
+      - name: "[8] core-service Ready 대기"
         run: ./scripts/dr/wait-ready.sh
 
       - name: "[9] DNS 전환"

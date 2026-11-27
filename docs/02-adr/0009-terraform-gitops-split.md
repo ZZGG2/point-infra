@@ -1,5 +1,5 @@
 # ADR-0009: Terraform(인프라) / ArgoCD(워크로드) 역할 분리
-- 상태: Accepted · 날짜: 2026-11-05
+- 상태: Accepted · 날짜: 2026-11-05 · 용어 갱신: 본문의 "monolith" 는 core-service 로 읽는다 (#35)
 
 ## 결정
 | 레이어 | 도구 | 범위 |

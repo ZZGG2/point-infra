@@ -5,7 +5,7 @@
 | 유형 | 주기 | 방법 | 운영 영향 |
 |---|---|---|---|
 | Tabletop | 분기 | 런북 읽으며 단계별 담당·판단 점검 | 없음 |
-| 부분 훈련 (Compute) | 월 1회 | `gcp-dr-compute` apply → monolith 기동 → Cloud SQL **읽기 복제본/클론**에 연결 → destroy | 없음 (DNS 미전환) |
+| 부분 훈련 (Compute) | 월 1회 | `gcp-dr-compute` apply → core-service 기동 → Cloud SQL **읽기 복제본/클론**에 연결 → destroy | 없음 (DNS 미전환) |
 | 전체 훈련 (Full Failover) | 프로젝트 중 2회 | AWS 측 ALB Health Check 강제 실패 → 전 과정 수행 → Failback | 점검 공지 필요 |
 
 > 부분 훈련에서 실 Cloud SQL을 승격하면 복제가 깨지므로, **클론 인스턴스**를 만들어 연결한다.
@@ -33,5 +33,5 @@
 - RTO ≤ 30분, RPO ≤ 5초
 - 스모크 테스트 100% 통과
 - 원장 대사 불일치 0건 (Failback 후)
-- 퀴즈 정산 판정표에 INCOMPLETE 0건 (재정산 후), Failback 후 모든 이벤트 `state = COMPLETE`
+- Failback 후 Stream pending 0, 이벤트별 Redis 당첨자 수 = 원장 지급 건수 (ADR-0018)
 - 수동 콘솔 작업 0회
